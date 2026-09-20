@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { emailMudancaStatus, enviarEmail } from "@/lib/email";
 import { createClient } from "@/lib/supabase/server";
-import type { Prioridade, Status } from "@/lib/types";
+import { STATUS_LABEL, type Prioridade, type Status } from "@/lib/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 async function requireUser() {
   const supabase = await createClient();
@@ -12,6 +14,23 @@ async function requireUser() {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Não autenticado");
   return { supabase, user };
+}
+
+async function notificarOutroUsuario(
+  supabase: SupabaseClient,
+  exceto: string,
+  subject: string,
+  html: string,
+) {
+  const { data: outro } = await supabase
+    .from("profiles")
+    .select("email")
+    .neq("id", exceto)
+    .maybeSingle();
+
+  if (outro?.email) {
+    await enviarEmail(outro.email, subject, html);
+  }
 }
 
 export async function criarTarefa(formData: FormData) {
@@ -65,10 +84,34 @@ export async function atualizarTarefa(id: string, formData: FormData) {
 }
 
 export async function atualizarStatus(id: string, status: Status) {
-  const { supabase } = await requireUser();
-  const { error } = await supabase.from("tasks").update({ status }).eq("id", id);
+  const { supabase, user } = await requireUser();
+
+  const { data: tarefa, error } = await supabase
+    .from("tasks")
+    .update({ status })
+    .eq("id", id)
+    .select("titulo")
+    .single();
+
   if (error) throw new Error(error.message);
   revalidatePath("/");
+
+  const { data: autor } = await supabase
+    .from("profiles")
+    .select("nome")
+    .eq("id", user.id)
+    .single();
+
+  await notificarOutroUsuario(
+    supabase,
+    user.id,
+    `Demanda atualizada: ${tarefa.titulo}`,
+    emailMudancaStatus({
+      titulo: tarefa.titulo,
+      statusLabel: STATUS_LABEL[status],
+      autorNome: autor?.nome ?? "Alguém",
+    }),
+  );
 }
 
 export async function atualizarPrioridade(id: string, prioridade: Prioridade) {

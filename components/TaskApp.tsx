@@ -1,12 +1,16 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo, useState, useTransition } from "react";
 import { sair } from "@/app/actions";
+import { ehAtrasada } from "@/lib/taskDisplay";
 import { STATUS_LABEL, type Profile, type Status, type TaskComResponsavel } from "@/lib/types";
+import TaskBoard from "./TaskBoard";
 import TaskForm from "./TaskForm";
 import TaskRow from "./TaskRow";
 
 type FiltroStatus = "todas" | Status;
+type Visao = "lista" | "quadro";
 
 export default function TaskApp({
   initialTasks,
@@ -18,119 +22,278 @@ export default function TaskApp({
   currentUserId: string;
 }) {
   const [showForm, setShowForm] = useState(false);
+  const [editando, setEditando] = useState<TaskComResponsavel | null>(null);
+  const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState<FiltroStatus>("todas");
   const [filtroResponsavel, setFiltroResponsavel] = useState("todos");
   const [somenteAtrasadas, setSomenteAtrasadas] = useState(false);
+  const [visao, setVisao] = useState<Visao>("lista");
   const [, startTransition] = useTransition();
 
   const hoje = new Date().toISOString().slice(0, 10);
   const currentUser = profiles.find((p) => p.id === currentUserId);
 
   const tasks = useMemo(() => {
+    const q = busca.trim().toLowerCase();
     return initialTasks.filter((t) => {
       if (filtroStatus !== "todas" && t.status !== filtroStatus) return false;
       if (filtroResponsavel !== "todos" && t.responsavel_id !== filtroResponsavel)
         return false;
-      if (somenteAtrasadas) {
-        const atrasada = !!t.prazo && t.prazo < hoje && t.status !== "concluida";
-        if (!atrasada) return false;
-      }
+      if (somenteAtrasadas && !ehAtrasada(t.prazo, t.status, hoje)) return false;
+      if (
+        q &&
+        !`${t.titulo} ${t.observacoes ?? ""} ${t.responsavel?.nome ?? ""}`
+          .toLowerCase()
+          .includes(q)
+      )
+        return false;
       return true;
     });
-  }, [initialTasks, filtroStatus, filtroResponsavel, somenteAtrasadas, hoje]);
+  }, [initialTasks, busca, filtroStatus, filtroResponsavel, somenteAtrasadas, hoje]);
 
-  const totalAtrasadas = initialTasks.filter(
-    (t) => !!t.prazo && t.prazo < hoje && t.status !== "concluida",
-  ).length;
+  const abertas = initialTasks.filter((t) => t.status !== "concluida").length;
+  const andamento = initialTasks.filter((t) => t.status === "em_andamento").length;
+  const atrasadas = initialTasks.filter((t) => ehAtrasada(t.prazo, t.status, hoje)).length;
+  const concluidas = initialTasks.filter((t) => t.status === "concluida").length;
+
+  const cards: {
+    label: string;
+    valor: number;
+    ativo: boolean;
+    destaque?: boolean;
+    onClick: () => void;
+  }[] = [
+    {
+      label: "Em aberto",
+      valor: abertas,
+      ativo: filtroStatus === "pendente" && !somenteAtrasadas,
+      onClick: () => {
+        setFiltroStatus("pendente");
+        setSomenteAtrasadas(false);
+      },
+    },
+    {
+      label: "Em andamento",
+      valor: andamento,
+      ativo: filtroStatus === "em_andamento" && !somenteAtrasadas,
+      onClick: () => {
+        setFiltroStatus("em_andamento");
+        setSomenteAtrasadas(false);
+      },
+    },
+    {
+      label: "Atrasadas",
+      valor: atrasadas,
+      ativo: somenteAtrasadas,
+      destaque: true,
+      onClick: () => {
+        setFiltroStatus("todas");
+        setSomenteAtrasadas(true);
+      },
+    },
+    {
+      label: "Concluídas",
+      valor: concluidas,
+      ativo: filtroStatus === "concluida" && !somenteAtrasadas,
+      onClick: () => {
+        setFiltroStatus("concluida");
+        setSomenteAtrasadas(false);
+      },
+    },
+  ];
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-zinc-900">
-            Gestão de Demandas
-          </h1>
-          <p className="text-sm text-zinc-500">
-            Olá, {currentUser?.nome ?? "usuário"}
-            {totalAtrasadas > 0 && (
-              <span className="ml-2 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
-                {totalAtrasadas} atrasada{totalAtrasadas > 1 ? "s" : ""}
-              </span>
-            )}
-          </p>
+    <div className="min-h-screen pb-20">
+      <header
+        className="sticky top-0 z-20 backdrop-blur-lg"
+        style={{ background: "rgba(12,11,11,.84)", borderBottom: "1px solid var(--border-subtle)" }}
+      >
+        <div className="mx-auto flex max-w-[1220px] flex-wrap items-center gap-4.5 px-5 py-3.5 sm:px-7">
+          <Image src="/logo.png" alt="Ei Pizza Delivery" width={110} height={80} className="h-9 w-auto" priority />
+          <div className="h-6.5 w-px" style={{ background: "var(--border-medium)" }} />
+          <div className="flex flex-col gap-0.5">
+            <span className="text-sm font-bold tracking-tight text-white">Gestão de Demandas</span>
+            <span className="text-[11.5px]" style={{ color: "var(--text-tertiary)" }}>
+              Diretoria · Ei Pizza Delivery
+            </span>
+          </div>
+          <div className="flex-1" />
+          <div className="flex items-center gap-2.5">
+            <div
+              className="flex items-center gap-2.5 rounded-full py-1.5 pr-3.5 pl-1.5"
+              style={{ border: "1px solid var(--border-medium)", background: "rgba(255,255,255,.03)" }}
+            >
+              <div
+                className="grid h-6.5 w-6.5 place-items-center rounded-full text-[11px] font-extrabold text-white"
+                style={{ background: "var(--accent)" }}
+              >
+                {(currentUser?.nome ?? "?").slice(0, 1).toUpperCase()}
+              </div>
+              <span className="text-xs font-semibold text-white">{currentUser?.nome ?? "usuário"}</span>
+            </div>
+            <button
+              onClick={() => startTransition(async () => await sair())}
+              className="cursor-pointer rounded-lg px-3.5 py-2 text-xs font-semibold text-white/70 transition-colors hover:bg-white hover:text-black"
+              style={{ border: "1px solid var(--border-medium)" }}
+            >
+              Sair
+            </button>
+          </div>
         </div>
-        <button
-          onClick={() =>
-            startTransition(async () => {
-              await sair();
-            })
-          }
-          className="text-sm font-medium text-zinc-500 hover:text-zinc-900"
-        >
-          Sair
-        </button>
       </header>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          onClick={() => setShowForm(true)}
-          className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700"
-        >
-          + Nova demanda
-        </button>
+      <main className="mx-auto max-w-[1220px] px-5 pt-7 sm:px-7">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-6">
+          <div>
+            <h1 className="mb-1.5 text-[28px] font-extrabold tracking-tight text-white">
+              Olá, {currentUser?.nome ?? "usuário"}
+            </h1>
+            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+              {abertas} demandas em aberto · {atrasadas} atrasadas · {concluidas} concluídas
+            </p>
+          </div>
+          <button
+            onClick={() => setShowForm(true)}
+            className="flex cursor-pointer items-center gap-2 rounded-[11px] px-5 py-3 text-sm font-bold text-white transition-transform hover:-translate-y-px"
+            style={{ background: "var(--accent)", boxShadow: "0 10px 24px -12px rgba(206,32,24,1)" }}
+          >
+            <span className="text-base leading-none">+</span>Nova demanda
+          </button>
+        </div>
 
-        <select
-          value={filtroStatus}
-          onChange={(e) => setFiltroStatus(e.target.value as FiltroStatus)}
-          className="rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900"
-        >
-          <option value="todas">Todos os status</option>
-          {Object.entries(STATUS_LABEL).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
+        <div className="mb-5.5 grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
+          {cards.map((c) => (
+            <button
+              key={c.label}
+              onClick={c.onClick}
+              className="flex cursor-pointer flex-col gap-2 rounded-2xl px-4.5 py-4 text-left transition-transform hover:-translate-y-0.5"
+              style={{
+                border: `1px solid ${c.ativo ? (c.destaque ? "var(--accent)" : "var(--border-strong)") : "var(--border-subtle)"}`,
+                background: c.ativo
+                  ? c.destaque
+                    ? "var(--accent-soft)"
+                    : "rgba(255,255,255,.1)"
+                  : "var(--surface)",
+              }}
+            >
+              <span
+                className="text-[11px] font-bold tracking-wider uppercase"
+                style={{ color: c.destaque ? "#e7483c" : "var(--text-secondary)" }}
+              >
+                {c.label}
+              </span>
+              <span className="text-[28px] leading-none font-extrabold tracking-tight text-white">
+                {c.valor}
+              </span>
+            </button>
           ))}
-        </select>
+        </div>
 
-        <select
-          value={filtroResponsavel}
-          onChange={(e) => setFiltroResponsavel(e.target.value)}
-          className="rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900"
+        <div
+          className="mb-5.5 flex flex-wrap items-center gap-2.5 rounded-2xl p-3"
+          style={{ border: "1px solid var(--border-subtle)", background: "rgba(255,255,255,.025)" }}
         >
-          <option value="todos">Todos os responsáveis</option>
-          {profiles.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.nome}
-            </option>
-          ))}
-        </select>
-
-        <label className="flex items-center gap-2 text-sm text-zinc-600">
           <input
-            type="checkbox"
-            checked={somenteAtrasadas}
-            onChange={(e) => setSomenteAtrasadas(e.target.checked)}
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Buscar demanda ou responsável…"
+            className="min-w-[220px] flex-1 rounded-[10px] px-3.5 py-2.5 text-[13.5px] text-white outline-none"
+            style={{ border: "1px solid var(--border-medium)", background: "rgba(0,0,0,.35)" }}
           />
-          Somente atrasadas
-        </label>
-      </div>
+          <select
+            value={filtroStatus}
+            onChange={(e) => setFiltroStatus(e.target.value as FiltroStatus)}
+            className="cursor-pointer rounded-[10px] px-3.5 py-2.5 text-[13.5px] text-white outline-none"
+            style={{ border: "1px solid var(--border-medium)", background: "rgba(0,0,0,.35)" }}
+          >
+            <option value="todas" style={{ background: "#1a1817" }}>Todos os status</option>
+            {Object.entries(STATUS_LABEL).map(([value, label]) => (
+              <option key={value} value={value} style={{ background: "#1a1817" }}>{label}</option>
+            ))}
+          </select>
+          <select
+            value={filtroResponsavel}
+            onChange={(e) => setFiltroResponsavel(e.target.value)}
+            className="cursor-pointer rounded-[10px] px-3.5 py-2.5 text-[13.5px] text-white outline-none"
+            style={{ border: "1px solid var(--border-medium)", background: "rgba(0,0,0,.35)" }}
+          >
+            <option value="todos" style={{ background: "#1a1817" }}>Todos os responsáveis</option>
+            {profiles.map((p) => (
+              <option key={p.id} value={p.id} style={{ background: "#1a1817" }}>{p.nome}</option>
+            ))}
+          </select>
+          <button
+            onClick={() => setSomenteAtrasadas((v) => !v)}
+            className="flex cursor-pointer items-center gap-2 rounded-[10px] px-3.5 py-2.5 text-[13px] font-semibold transition-colors"
+            style={{
+              border: `1px solid ${somenteAtrasadas ? "var(--accent)" : "var(--border-medium)"}`,
+              background: somenteAtrasadas ? "var(--accent)" : "transparent",
+              color: somenteAtrasadas ? "#ffffff" : "var(--text-secondary)",
+            }}
+          >
+            <span
+              className="h-1.5 w-1.5 rounded-full"
+              style={{ background: somenteAtrasadas ? "#ffffff" : "rgba(255,255,255,.35)" }}
+            />
+            Somente atrasadas
+          </button>
+          <div
+            className="flex gap-[3px] rounded-[10px] p-[3px]"
+            style={{ background: "rgba(0,0,0,.38)", border: "1px solid var(--border-subtle)" }}
+          >
+            {(["lista", "quadro"] as Visao[]).map((v) => (
+              <button
+                key={v}
+                onClick={() => setVisao(v)}
+                className="cursor-pointer rounded-lg px-4 py-2 text-[12.5px] font-bold transition-colors"
+                style={{
+                  background: visao === v ? "var(--accent)" : "transparent",
+                  color: visao === v ? "#ffffff" : "var(--text-secondary)",
+                }}
+              >
+                {v === "lista" ? "Lista" : "Quadro"}
+              </button>
+            ))}
+          </div>
+        </div>
 
-      <div className="flex flex-col gap-3">
-        {tasks.length === 0 && (
-          <p className="rounded-lg border border-dashed border-zinc-300 py-10 text-center text-sm text-zinc-500">
-            Nenhuma demanda encontrada.
-          </p>
+        {tasks.length === 0 ? (
+          <div
+            className="rounded-2xl px-6 py-16 text-center"
+            style={{ border: "1px dashed var(--border-medium)" }}
+          >
+            <p className="mb-1.5 text-[15px] font-bold text-white">
+              Nenhuma demanda com esses filtros
+            </p>
+            <p className="text-[13px]" style={{ color: "var(--text-tertiary)" }}>
+              Ajuste a busca ou limpe os filtros para ver tudo.
+            </p>
+          </div>
+        ) : visao === "lista" ? (
+          <div className="flex flex-col gap-3">
+            {tasks.map((task) => (
+              <TaskRow key={task.id} task={task} profiles={profiles} hoje={hoje} />
+            ))}
+          </div>
+        ) : (
+          <TaskBoard tarefas={tasks} hoje={hoje} onEditar={setEditando} />
         )}
-        {tasks.map((task) => (
-          <TaskRow key={task.id} task={task} profiles={profiles} hoje={hoje} />
-        ))}
-      </div>
+      </main>
 
       {showForm && (
         <TaskForm
           profiles={profiles}
           currentUserId={currentUserId}
           onClose={() => setShowForm(false)}
+        />
+      )}
+
+      {editando && (
+        <TaskForm
+          profiles={profiles}
+          currentUserId={editando.criado_por}
+          task={editando}
+          onClose={() => setEditando(null)}
         />
       )}
     </div>

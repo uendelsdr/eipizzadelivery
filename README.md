@@ -64,18 +64,47 @@ Abra [http://localhost:3000](http://localhost:3000) e entre com um dos e-mails/s
 5. Clique em **Deploy**. Em poucos minutos o app estará no ar em um endereço
    `https://seu-projeto.vercel.app` (dá pra depois apontar um domínio próprio, se quiser).
 
-## 3. Sobre as notificações
+## 3. Notificações por e-mail
 
-Por decisão de vocês, por enquanto as notificações são **dentro do próprio app**:
+Além do destaque visual dentro do app para demandas atrasadas, o sistema envia e-mails:
 
-- Demandas com prazo vencido (e ainda não concluídas) aparecem destacadas em vermelho
-  com a etiqueta "Atrasada", e o total de atrasadas aparece no topo da tela.
-- Qualquer mudança de status é refletida imediatamente para os dois usuários.
+- **Mudança de status**: quando um dos dois usuários muda o status de uma demanda,
+  o outro recebe um e-mail avisando.
+- **Prazo vencido**: todo dia, um job automático (Vercel Cron) verifica as demandas
+  atrasadas e envia um e-mail para cada responsável com a lista das suas pendências.
 
-Quando vocês decidirem integrar WhatsApp (Twilio ou Meta Cloud API), a mudança fica
-concentrada em `app/actions.ts` (funções `atualizarStatus` e `criarTarefa`, além de
-um novo job agendado para checar prazos vencidos) — não muda nada na estrutura do
-banco de dados ou da interface.
+### 3.1. Criar conta no Resend (gratuito, até 3.000 e-mails/mês)
+
+1. Crie uma conta em [resend.com](https://resend.com).
+2. Vá em **Domains > Add Domain** e adicione o mesmo domínio que você já usa
+   (ex: `eipizzadelivery.com.br`). O Resend vai te dar alguns registros DNS
+   (TXT/MX) para adicionar no Hostinger — igual fizemos para o subdomínio do app.
+3. Depois que o domínio aparecer como **Verified**, vá em **API Keys > Create API Key**
+   e copie a chave (começa com `re_`).
+
+### 3.2. Pegar a Secret key do Supabase (só para o job de prazos vencidos)
+
+1. No Supabase, vá em **Project Settings > API Keys > Secret keys**.
+2. Copie o valor (começa com `sb_secret_`). **Essa chave nunca deve começar com
+   `NEXT_PUBLIC_` nem aparecer no navegador** — é só para o job automático no servidor.
+
+### 3.3. Variáveis de ambiente novas
+
+Preencha no `.env.local` (local) e também nas **Environment Variables** do projeto na Vercel:
+
+```bash
+NEXT_PUBLIC_APP_URL=https://demandas.eipizzadelivery.com.br
+RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+EMAIL_FROM="Gestão de Demandas <notificacoes@eipizzadelivery.com.br>"
+SUPABASE_SECRET_KEY=sb_secret_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+CRON_SECRET=escolha-uma-senha-aleatoria-aqui
+```
+
+Depois de adicionar na Vercel, faça um **redeploy** para as variáveis passarem a valer.
+
+O agendamento do job diário já está configurado em [`vercel.json`](./vercel.json)
+(roda 12:00 UTC = 09:00 no horário de Brasília). Enquanto `RESEND_API_KEY` não estiver
+configurada, os envios são simplesmente ignorados — nada quebra.
 
 ## 4. Estrutura do projeto
 

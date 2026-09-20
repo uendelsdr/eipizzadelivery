@@ -10,9 +10,12 @@ Feito com Next.js + Supabase (banco de dados e login).
 
 1. Crie uma conta em [supabase.com](https://supabase.com) e clique em **New Project**.
 2. Anote a **senha do banco** que você definir (guarde em local seguro).
-3. Depois que o projeto for criado, vá em **Project Settings > API** e copie:
-   - `Project URL`
-   - `anon public` key
+3. Depois que o projeto for criado, vá em **Project Settings > API**:
+   - Na aba **API Keys**, copie a **Publishable key** (`sb_publishable_...`) — é o
+     equivalente atual da antiga "anon public key". **Nunca use a "Secret key"**
+     (`sb_secret_...`) aqui: ela tem acesso privilegiado e não pode ser exposta no frontend.
+   - No menu à esquerda, clique em **Data API** para pegar a `Project URL`
+     (algo como `https://xxxxxxxx.supabase.co`).
 
 ### 1.2. Criar as tabelas
 

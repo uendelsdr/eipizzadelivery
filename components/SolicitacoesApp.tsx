@@ -12,17 +12,19 @@ export default function SolicitacoesApp({
   initialSolicitacoes,
   profiles,
   currentUserId,
+  souAprovador,
 }: {
   initialSolicitacoes: SolicitacaoComPerfis[];
   profiles: Profile[];
   currentUserId: string;
+  souAprovador: boolean;
 }) {
   const [showForm, setShowForm] = useState(false);
   const [filtroStatus, setFiltroStatus] = useState<FiltroStatus>("todas");
 
-  const pendentesParaMim = initialSolicitacoes.filter(
-    (s) => s.status === "pendente" && s.solicitante_id !== currentUserId,
-  ).length;
+  const pendentesParaMim = souAprovador
+    ? initialSolicitacoes.filter((s) => s.status === "pendente").length
+    : 0;
 
   const solicitacoes = useMemo(() => {
     return initialSolicitacoes.filter(
@@ -49,7 +51,7 @@ export default function SolicitacoesApp({
           <button
             onClick={() => setShowForm(true)}
             className="flex cursor-pointer items-center gap-2 rounded-[11px] px-5 py-3 text-sm font-bold text-white transition-transform hover:-translate-y-px"
-            style={{ background: "var(--accent)", boxShadow: "0 6px 16px -8px rgba(206,32,24,.5)" }}
+            style={{ background: "var(--accent)", boxShadow: "0 6px 16px -8px rgba(217,43,31,.5)" }}
           >
             <span className="text-base leading-none">+</span>Nova solicitação
           </button>
@@ -87,7 +89,12 @@ export default function SolicitacoesApp({
         ) : (
           <div className="flex flex-col gap-3">
             {solicitacoes.map((s) => (
-              <SolicitacaoRow key={s.id} solicitacao={s} currentUserId={currentUserId} />
+              <SolicitacaoRow
+                key={s.id}
+                solicitacao={s}
+                currentUserId={currentUserId}
+                souAprovador={souAprovador}
+              />
             ))}
           </div>
         )}

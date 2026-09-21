@@ -6,6 +6,7 @@ import {
   emailNovaSolicitacao,
   enviarEmail,
 } from "@/lib/email";
+import { APPROVER_EMAIL } from "@/lib/approver";
 import { createClient } from "@/lib/supabase/server";
 import { TIPO_SOLICITACAO_LABEL, type TipoSolicitacao } from "@/lib/types";
 
@@ -66,6 +67,10 @@ export async function decidirSolicitacao(
 ) {
   const { supabase, user } = await requireUser();
 
+  if (user.email !== APPROVER_EMAIL) {
+    throw new Error("Somente o aprovador pode decidir sobre solicitações");
+  }
+
   const { data: solicitacao, error: fetchError } = await supabase
     .from("solicitacoes")
     .select("titulo, numero, solicitante_id, status")
@@ -73,9 +78,6 @@ export async function decidirSolicitacao(
     .single();
 
   if (fetchError) throw new Error(fetchError.message);
-  if (solicitacao.solicitante_id === user.id) {
-    throw new Error("Você não pode decidir sobre a própria solicitação");
-  }
   if (solicitacao.status !== "pendente") {
     throw new Error("Esta solicitação já foi decidida");
   }

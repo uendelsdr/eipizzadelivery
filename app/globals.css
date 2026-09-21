@@ -16,17 +16,19 @@
   --text-tertiary: rgba(255, 255, 255, 0.48);
   --text-muted: rgba(255, 255, 255, 0.32);
 
-  --accent: #ce2018;
-  --accent-hover: #e7483c;
-  --accent-soft: rgba(206, 32, 24, 0.16);
-  --accent-border: rgba(206, 32, 24, 0.5);
+  --accent: #d92b1f;
+  --accent-hover: #ef4136;
+  --accent-soft: rgba(217, 43, 31, 0.16);
+  --accent-border: rgba(217, 43, 31, 0.5);
+
+  --font-brand: var(--font-gabarito);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-jakarta);
-  --font-mono: var(--font-jetbrains);
+  --font-sans: var(--font-instrument);
+  --font-mono: var(--font-space-mono);
 }
 
 * {
@@ -34,16 +36,26 @@
 }
 
 body {
-  background:
-    radial-gradient(
-      1100px 520px at 12% -16%,
-      rgba(206, 32, 24, 0.16),
-      transparent 62%
-    ),
-    var(--background);
+  background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-jakarta), system-ui, sans-serif;
+  font-family: var(--font-instrument), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  position: relative;
+}
+
+/* Brilho decorativo fixo em relação à tela (não ao tamanho do conteúdo),
+   para não reaparecer como uma faixa no meio/fim de páginas compridas. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(
+    1100px 520px at 12% -16%,
+    rgba(217, 43, 31, 0.16),
+    transparent 62%
+  );
+  pointer-events: none;
 }
 
 ::placeholder {

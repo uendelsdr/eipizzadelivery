@@ -32,9 +32,11 @@ export default function AppHeader({
         <OkeiIcon size={32} />
         <div className="h-6.5 w-px" style={{ background: "var(--border-medium)" }} />
         <div className="flex flex-col gap-0.5">
-          <span className="text-sm font-extrabold tracking-tight">
-            <span className="text-white">Ok</span>
-            <span style={{ color: "var(--accent)" }}>EI</span>
+          <span
+            className="text-lg leading-none font-black text-white"
+            style={{ fontFamily: "var(--font-brand)", letterSpacing: "-0.05em" }}
+          >
+            OkEI
           </span>
           <span className="text-[11.5px]" style={{ color: "var(--text-tertiary)" }}>
             Gestão de Demandas · Ei Pizza Delivery

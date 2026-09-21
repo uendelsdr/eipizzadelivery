@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import { criarSolicitacao } from "@/app/solicitacoes/actions";
 import { TIPO_SOLICITACAO_STYLE } from "@/lib/solicitacaoDisplay";
 import { TIPO_SOLICITACAO_LABEL, type TipoSolicitacao } from "@/lib/types";
@@ -24,10 +25,10 @@ export default function SolicitacaoForm({ onClose }: { onClose: () => void }) {
     });
   }
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,.74)", backdropFilter: "blur(6px)" }}
+      style={{ background: "rgba(6,5,5,.9)" }}
       onClick={onClose}
     >
       <div
@@ -134,12 +135,13 @@ export default function SolicitacaoForm({ onClose }: { onClose: () => void }) {
             form="solicitacao-form"
             disabled={isPending}
             className="cursor-pointer rounded-lg px-6 py-3 text-[13.5px] font-bold text-white transition-colors disabled:opacity-50"
-            style={{ background: "var(--accent)", boxShadow: "0 6px 16px -8px rgba(206,32,24,.5)" }}
+            style={{ background: "var(--accent)", boxShadow: "0 6px 16px -8px rgba(217,43,31,.5)" }}
           >
             {isPending ? "Enviando..." : "Enviar solicitação"}
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

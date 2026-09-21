@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import ConfigMissing from "@/components/ConfigMissing";
 import SolicitacoesApp from "@/components/SolicitacoesApp";
+import { APPROVER_EMAIL } from "@/lib/approver";
 import { hasSupabaseConfig } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import type { Profile, SolicitacaoComPerfis } from "@/lib/types";
@@ -30,6 +31,7 @@ export default async function SolicitacoesPage() {
       initialSolicitacoes={(solicitacoes ?? []) as unknown as SolicitacaoComPerfis[]}
       profiles={(profiles ?? []) as Profile[]}
       currentUserId={user.id}
+      souAprovador={user.email === APPROVER_EMAIL}
     />
   );
 }

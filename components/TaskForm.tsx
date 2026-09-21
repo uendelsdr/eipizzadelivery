@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import { atualizarTarefa, criarTarefa } from "@/app/actions";
 import { PRIORIDADE_STYLE } from "@/lib/taskDisplay";
 import { PRIORIDADE_LABEL, type Prioridade, type Profile, type TaskComResponsavel } from "@/lib/types";
@@ -39,10 +40,10 @@ export default function TaskForm({
     });
   }
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,.74)", backdropFilter: "blur(6px)" }}
+      style={{ background: "rgba(6,5,5,.9)" }}
       onClick={onClose}
     >
       <div
@@ -183,12 +184,13 @@ export default function TaskForm({
             form="task-form"
             disabled={isPending}
             className="cursor-pointer rounded-lg px-6 py-3 text-[13.5px] font-bold text-white transition-colors disabled:opacity-50"
-            style={{ background: "var(--accent)", boxShadow: "0 6px 16px -8px rgba(206,32,24,.5)" }}
+            style={{ background: "var(--accent)", boxShadow: "0 6px 16px -8px rgba(217,43,31,.5)" }}
           >
             {isPending ? "Salvando..." : task ? "Salvar alterações" : "Criar demanda"}
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

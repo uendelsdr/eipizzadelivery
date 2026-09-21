@@ -117,7 +117,7 @@ export default function TaskApp({
           <button
             onClick={() => setShowForm(true)}
             className="flex cursor-pointer items-center gap-2 rounded-[11px] px-5 py-3 text-sm font-bold text-white transition-transform hover:-translate-y-px"
-            style={{ background: "var(--accent)", boxShadow: "0 6px 16px -8px rgba(206,32,24,.5)" }}
+            style={{ background: "var(--accent)", boxShadow: "0 6px 16px -8px rgba(217,43,31,.5)" }}
           >
             <span className="text-base leading-none">+</span>Nova demanda
           </button>
@@ -140,7 +140,7 @@ export default function TaskApp({
             >
               <span
                 className="text-[11px] font-bold tracking-wider uppercase"
-                style={{ color: c.destaque ? "#e7483c" : "var(--text-secondary)" }}
+                style={{ color: c.destaque ? "#ef4136" : "var(--text-secondary)" }}
               >
                 {c.label}
               </span>

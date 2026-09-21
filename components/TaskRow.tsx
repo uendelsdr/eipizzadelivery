@@ -150,7 +150,7 @@ export default function TaskRow({
           className="cursor-pointer rounded-lg px-3.5 py-2 text-xs font-semibold transition-colors hover:bg-[var(--accent)] hover:text-white"
           style={{
             border: "1px solid var(--accent-border)",
-            background: "rgba(206,32,24,.14)",
+            background: "rgba(217,43,31,.14)",
             color: "#f2776d",
           }}
         >

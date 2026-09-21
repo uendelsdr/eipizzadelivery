@@ -3,6 +3,8 @@ import { ImageResponse } from "next/og";
 export const size = { width: 180, height: 180 };
 export const contentType = "image/png";
 
+const ACCENT = "#d92b1f";
+
 export default function AppleIcon() {
   return new ImageResponse(
     (
@@ -13,21 +15,46 @@ export default function AppleIcon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#ce2018",
+          background: ACCENT,
         }}
       >
-        <svg
-          width="108"
-          height="108"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#ffffff"
-          strokeWidth="3"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+        <div
+          style={{
+            width: 123,
+            height: 70,
+            borderRadius: 35,
+            background: "#ffffff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            padding: 7.5,
+          }}
         >
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
+          <div
+            style={{
+              width: 57.4,
+              height: 57.4,
+              borderRadius: "50%",
+              background: ACCENT,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <svg
+              width="35"
+              height="35"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#ffffff"
+              strokeWidth="4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M4.5 12.5 L9.5 17.5 L19.5 6.5" />
+            </svg>
+          </div>
+        </div>
       </div>
     ),
     { ...size },

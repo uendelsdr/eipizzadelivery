@@ -16,10 +16,12 @@ const COLUNAS: Status[] = ["pendente", "em_andamento", "concluida"];
 export default function TaskBoard({
   tarefas,
   hoje,
+  currentUserId,
   onEditar,
 }: {
   tarefas: TaskComResponsavel[];
   hoje: string;
+  currentUserId: string;
   onEditar: (task: TaskComResponsavel) => void;
 }) {
   return (
@@ -50,7 +52,13 @@ export default function TaskBoard({
             </div>
 
             {itens.map((task) => (
-              <BoardCard key={task.id} task={task} hoje={hoje} onEditar={() => onEditar(task)} />
+              <BoardCard
+                key={task.id}
+                task={task}
+                hoje={hoje}
+                currentUserId={currentUserId}
+                onEditar={() => onEditar(task)}
+              />
             ))}
           </section>
         );
@@ -62,15 +70,20 @@ export default function TaskBoard({
 function BoardCard({
   task,
   hoje,
+  currentUserId,
   onEditar,
 }: {
   task: TaskComResponsavel;
   hoje: string;
+  currentUserId: string;
   onEditar: () => void;
 }) {
   const [isPending, startTransition] = useTransition();
   const prio = PRIORIDADE_STYLE[task.prioridade];
   const prazo = prazoInfo(task.prazo, task.status, hoje);
+  const souResponsavel = task.responsavel_id === currentUserId;
+  const avancarConclui = task.status === "em_andamento";
+  const avancarBloqueado = avancarConclui && !souResponsavel;
 
   return (
     <article
@@ -109,7 +122,12 @@ function BoardCard({
 
       <div className="flex gap-1.5 pt-0.5">
         <button
-          disabled={isPending}
+          disabled={isPending || avancarBloqueado}
+          title={
+            avancarBloqueado
+              ? "Só o responsável pela demanda pode concluí-la"
+              : undefined
+          }
           onClick={() =>
             startTransition(async () => {
               const proximo =
@@ -117,7 +135,7 @@ function BoardCard({
               await atualizarStatus(task.id, proximo);
             })
           }
-          className="flex-1 cursor-pointer rounded-lg px-2.5 py-2 text-[11.5px] font-bold text-white transition-colors hover:bg-white hover:text-black"
+          className="flex-1 cursor-pointer rounded-lg px-2.5 py-2 text-[11.5px] font-bold text-white transition-colors hover:bg-white hover:text-black disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-white"
           style={{ border: "1px solid var(--border-medium)", background: "rgba(255,255,255,.06)" }}
         >
           {AVANCAR_LABEL[task.status]}

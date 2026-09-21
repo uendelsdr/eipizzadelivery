@@ -234,11 +234,22 @@ export default function TaskApp({
         ) : visao === "lista" ? (
           <div className="flex flex-col gap-3">
             {tasks.map((task) => (
-              <TaskRow key={task.id} task={task} profiles={profiles} hoje={hoje} />
+              <TaskRow
+                key={task.id}
+                task={task}
+                profiles={profiles}
+                hoje={hoje}
+                currentUserId={currentUserId}
+              />
             ))}
           </div>
         ) : (
-          <TaskBoard tarefas={tasks} hoje={hoje} onEditar={setEditando} />
+          <TaskBoard
+            tarefas={tasks}
+            hoje={hoje}
+            currentUserId={currentUserId}
+            onEditar={setEditando}
+          />
         )}
       </main>
 

@@ -17,10 +17,12 @@ export default function TaskRow({
   task,
   profiles,
   hoje,
+  currentUserId,
 }: {
   task: TaskComResponsavel;
   profiles: Profile[];
   hoje: string;
+  currentUserId: string;
 }) {
   const [isPending, startTransition] = useTransition();
   const [editando, setEditando] = useState(false);
@@ -28,6 +30,7 @@ export default function TaskRow({
   const prio = PRIORIDADE_STYLE[task.prioridade];
   const st = STATUS_STYLE[task.status];
   const prazo = prazoInfo(task.prazo, task.status, hoje);
+  const souResponsavel = task.responsavel_id === currentUserId;
 
   return (
     <article
@@ -99,15 +102,26 @@ export default function TaskRow({
           disabled={isPending}
           onChange={(e) => {
             const status = e.target.value as Status;
+            if (status === "concluida" && !souResponsavel) return;
             startTransition(async () => {
               await atualizarStatus(task.id, status);
             });
           }}
+          title={
+            !souResponsavel
+              ? "Só o responsável pela demanda pode concluí-la"
+              : undefined
+          }
           className="cursor-pointer rounded-lg px-3 py-2 text-xs font-semibold text-white outline-none"
           style={{ border: "1px solid var(--border-medium)", background: "rgba(0,0,0,.38)" }}
         >
           {Object.entries(STATUS_LABEL).map(([value, label]) => (
-            <option key={value} value={value} style={{ background: "#1a1817" }}>
+            <option
+              key={value}
+              value={value}
+              disabled={value === "concluida" && !souResponsavel}
+              style={{ background: "#1a1817" }}
+            >
               {label}
             </option>
           ))}

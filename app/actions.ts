@@ -100,6 +100,17 @@ export async function atualizarTarefa(id: string, formData: FormData) {
 export async function atualizarStatus(id: string, status: Status) {
   const { supabase, user } = await requireUser();
 
+  if (status === "concluida") {
+    const { data: atual } = await supabase
+      .from("tasks")
+      .select("responsavel_id")
+      .eq("id", id)
+      .single();
+    if (atual?.responsavel_id !== user.id) {
+      throw new Error("Só o responsável pela demanda pode concluí-la");
+    }
+  }
+
   const { data: tarefa, error } = await supabase
     .from("tasks")
     .update({ status })

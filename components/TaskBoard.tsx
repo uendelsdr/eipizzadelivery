@@ -82,8 +82,8 @@ function BoardCard({
   const prio = PRIORIDADE_STYLE[task.prioridade];
   const prazo = prazoInfo(task.prazo, task.status, hoje);
   const souResponsavel = task.responsavel_id === currentUserId;
-  const avancarConclui = task.status === "em_andamento";
-  const avancarBloqueado = avancarConclui && !souResponsavel;
+  const avancarMudaProgresso = task.status === "pendente" || task.status === "em_andamento";
+  const avancarBloqueado = avancarMudaProgresso && !souResponsavel;
 
   return (
     <article
@@ -125,7 +125,7 @@ function BoardCard({
           disabled={isPending || avancarBloqueado}
           title={
             avancarBloqueado
-              ? "Só o responsável pela demanda pode concluí-la"
+              ? "Só o responsável pela demanda pode iniciá-la ou concluí-la"
               : undefined
           }
           onClick={() =>

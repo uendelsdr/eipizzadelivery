@@ -102,14 +102,14 @@ export default function TaskRow({
           disabled={isPending}
           onChange={(e) => {
             const status = e.target.value as Status;
-            if (status === "concluida" && !souResponsavel) return;
+            if ((status === "concluida" || status === "em_andamento") && !souResponsavel) return;
             startTransition(async () => {
               await atualizarStatus(task.id, status);
             });
           }}
           title={
             !souResponsavel
-              ? "Só o responsável pela demanda pode concluí-la"
+              ? "Só o responsável pela demanda pode iniciá-la ou concluí-la"
               : undefined
           }
           className="cursor-pointer rounded-lg px-3 py-2 text-xs font-semibold text-white outline-none"
@@ -119,7 +119,7 @@ export default function TaskRow({
             <option
               key={value}
               value={value}
-              disabled={value === "concluida" && !souResponsavel}
+              disabled={(value === "concluida" || value === "em_andamento") && !souResponsavel}
               style={{ background: "#1a1817" }}
             >
               {label}

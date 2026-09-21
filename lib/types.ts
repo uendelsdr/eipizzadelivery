@@ -44,9 +44,22 @@ export type Solicitacao = {
   decided_at: string | null;
 };
 
+export type SolicitacaoComentario = {
+  id: string;
+  solicitacao_id: string;
+  autor_id: string;
+  mensagem: string;
+  created_at: string;
+};
+
+export type ComentarioComAutor = SolicitacaoComentario & {
+  autor: Profile | null;
+};
+
 export type SolicitacaoComPerfis = Solicitacao & {
   solicitante: Profile | null;
   decisor: Profile | null;
+  comentarios: ComentarioComAutor[];
 };
 
 export const PRIORIDADE_LABEL: Record<Prioridade, string> = {

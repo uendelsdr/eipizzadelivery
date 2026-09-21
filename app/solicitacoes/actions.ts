@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import {
+  emailComentarioSolicitacao,
   emailDecisaoSolicitacao,
   emailNovaSolicitacao,
   enviarEmail,
@@ -112,6 +113,48 @@ export async function decidirSolicitacao(
         aprovada: status === "aprovada",
         decisorNome: decisor?.nome ?? "Alguém",
         comentario: comentarioFinal,
+      }),
+    );
+  }
+}
+
+export async function enviarComentario(solicitacaoId: string, mensagem: string) {
+  const { supabase, user } = await requireUser();
+
+  const texto = mensagem.trim();
+  if (!texto) throw new Error("Mensagem vazia");
+
+  const { data: solicitacao, error: fetchError } = await supabase
+    .from("solicitacoes")
+    .select("titulo, numero")
+    .eq("id", solicitacaoId)
+    .single();
+
+  if (fetchError) throw new Error(fetchError.message);
+
+  const { error } = await supabase.from("solicitacao_comentarios").insert({
+    solicitacao_id: solicitacaoId,
+    autor_id: user.id,
+    mensagem: texto,
+  });
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/solicitacoes");
+
+  const [{ data: autor }, { data: outro }] = await Promise.all([
+    supabase.from("profiles").select("nome").eq("id", user.id).single(),
+    supabase.from("profiles").select("email").neq("id", user.id).maybeSingle(),
+  ]);
+
+  if (outro?.email) {
+    await enviarEmail(
+      outro.email,
+      `Nova mensagem na solicitação: ${solicitacao.titulo}`,
+      emailComentarioSolicitacao({
+        numero: solicitacao.numero,
+        titulo: solicitacao.titulo,
+        autorNome: autor?.nome ?? "Alguém",
+        mensagem: texto,
       }),
     );
   }

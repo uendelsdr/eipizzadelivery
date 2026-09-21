@@ -24,7 +24,8 @@ Delivery.
 1. No painel do Supabase, abra **SQL Editor > New query**.
 2. Cole todo o conteúdo do arquivo [`supabase/schema.sql`](./supabase/schema.sql) e clique em **Run**.
    (Se o banco já existia antes das demandas terem número/descrição e da aba de
-   solicitações, rode também [`supabase/migration_002_numero_descricao_solicitacoes.sql`](./supabase/migration_002_numero_descricao_solicitacoes.sql).)
+   solicitações, rode também [`migration_002`](./supabase/migration_002_numero_descricao_solicitacoes.sql)
+   e [`migration_003`](./supabase/migration_003_comentarios_solicitacao.sql), nessa ordem.)
 
 ### 1.3. Criar os 2 usuários (você e o diretor operacional)
 
@@ -113,14 +114,16 @@ configurada, os envios são simplesmente ignorados — nada quebra.
 ## 4. Solicitações de aprovação
 
 Além das demandas, existe uma segunda aba (**Solicitações**) para pedidos de compra,
-mudança ou outro tipo que precisam da aprovação do outro usuário:
+mudança ou outro tipo que precisam de aprovação:
 
 - Qualquer um dos dois cria uma solicitação (tipo, título, descrição e, se for
   compra, um valor estimado).
-- Só quem **não** criou a solicitação pode aprová-la ou rejeitá-la (com um
-  comentário opcional).
-- O outro usuário recebe um e-mail quando uma nova solicitação precisa da decisão
-  dele, e o solicitante recebe um e-mail quando ela é aprovada ou rejeitada.
+- Só o **aprovador** (por padrão, `uendelsdr@gmail.com` — configurável pela
+  variável `APPROVER_EMAIL`) pode aprovar ou rejeitar, com um comentário opcional.
+- Antes de decidir, dá pra trocar mensagens na própria solicitação (perguntar
+  algo, pedir mais detalhes, responder) — fica registrado como uma conversa.
+- O outro usuário recebe um e-mail quando uma nova solicitação precisa de decisão,
+  quando alguém deixa uma mensagem, e quando ela é aprovada ou rejeitada.
 
 ## 5. Estrutura do projeto
 

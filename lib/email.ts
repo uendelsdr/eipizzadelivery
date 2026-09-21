@@ -9,7 +9,7 @@ const COR = {
   texto: "#18181b",
   suave: "#71717a",
   borda: "#e4e4e7",
-  destaque: "#ce2018",
+  destaque: "#d92b1f",
 };
 
 function appUrl() {
@@ -220,6 +220,37 @@ export function emailDecisaoSolicitacao({
   return emailShell(
     `Solicitação ${statusLabel.toLowerCase()}: ${titulo}`,
     "Solicitação decidida",
+    body,
+  );
+}
+
+export function emailComentarioSolicitacao({
+  numero,
+  titulo,
+  autorNome,
+  mensagem,
+}: {
+  numero: number;
+  titulo: string;
+  autorNome: string;
+  mensagem: string;
+}) {
+  const body = `
+    <p style="margin:0 0 4px;color:${COR.suave};font-size:11.5px;font-weight:700;">Solicitação nº ${numero}</p>
+    <h1 style="margin:0 0 14px;color:${COR.texto};font-size:19px;font-weight:800;line-height:1.35;">${titulo}</h1>
+    <p style="margin:0 0 10px;color:${COR.texto};font-size:14px;line-height:1.6;">
+      <strong>${autorNome}</strong> deixou uma mensagem nesta solicitação:
+    </p>
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-top:1px solid ${COR.borda};padding-top:12px;">
+      <tr>
+        <td style="padding:10px 14px;background:#f4f4f5;border-radius:8px;color:${COR.texto};font-size:13.5px;line-height:1.6;">${mensagem}</td>
+      </tr>
+    </table>
+    ${botao(appUrl() + "/solicitacoes", "Responder no OkEI")}
+  `;
+  return emailShell(
+    `${autorNome} comentou em: ${titulo}`,
+    "Nova mensagem",
     body,
   );
 }

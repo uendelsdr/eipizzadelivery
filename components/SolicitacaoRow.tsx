@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { decidirSolicitacao, excluirSolicitacao } from "@/app/solicitacoes/actions";
+import {
+  decidirSolicitacao,
+  enviarComentario,
+  excluirSolicitacao,
+} from "@/app/solicitacoes/actions";
 import {
   formatarDataHora,
   formatarValor,
@@ -26,11 +30,13 @@ export default function SolicitacaoRow({
   const [isPending, startTransition] = useTransition();
   const [decidindo, setDecidindo] = useState<"aprovada" | "rejeitada" | null>(null);
   const [comentario, setComentario] = useState("");
+  const [mensagem, setMensagem] = useState("");
 
   const st = STATUS_SOLICITACAO_STYLE[solicitacao.status];
   const tp = TIPO_SOLICITACAO_STYLE[solicitacao.tipo];
   const podeDecidir = solicitacao.status === "pendente" && souAprovador;
   const ehSolicitante = solicitacao.solicitante_id === currentUserId;
+  const podeConversar = solicitacao.status === "pendente" && (souAprovador || ehSolicitante);
 
   function confirmarDecisao() {
     if (!decidindo) return;
@@ -38,6 +44,15 @@ export default function SolicitacaoRow({
       await decidirSolicitacao(solicitacao.id, decidindo, comentario);
       setDecidindo(null);
       setComentario("");
+    });
+  }
+
+  function enviarMensagem() {
+    const texto = mensagem.trim();
+    if (!texto) return;
+    startTransition(async () => {
+      await enviarComentario(solicitacao.id, texto);
+      setMensagem("");
     });
   }
 
@@ -120,6 +135,58 @@ export default function SolicitacaoRow({
           </button>
         )}
       </div>
+
+      {solicitacao.comentarios.length > 0 && (
+        <div
+          className="flex flex-col gap-2.5 border-t pt-3"
+          style={{ borderColor: "var(--border-subtle)" }}
+        >
+          {solicitacao.comentarios.map((c) => (
+            <div key={c.id} className="flex flex-col gap-0.5">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-white">{c.autor?.nome ?? "-"}</span>
+                <span className="font-mono text-[10.5px]" style={{ color: "var(--text-muted)" }}>
+                  {formatarDataHora(c.created_at)}
+                </span>
+              </div>
+              <p className="text-sm whitespace-pre-wrap" style={{ color: "var(--text-secondary)" }}>
+                {c.mensagem}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {podeConversar && (
+        <div
+          className="flex gap-2 border-t pt-3"
+          style={{ borderColor: "var(--border-subtle)" }}
+        >
+          <input
+            value={mensagem}
+            onChange={(e) => setMensagem(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                enviarMensagem();
+              }
+            }}
+            placeholder={
+              souAprovador ? "Perguntar ou pedir mais informações…" : "Responder…"
+            }
+            className="flex-1 rounded-lg px-3.5 py-2.5 text-sm text-white outline-none"
+            style={{ border: "1px solid var(--border-medium)", background: "rgba(0,0,0,.38)" }}
+          />
+          <button
+            onClick={enviarMensagem}
+            disabled={isPending || !mensagem.trim()}
+            className="cursor-pointer rounded-lg px-4 py-2.5 text-xs font-bold text-white transition-colors disabled:opacity-50"
+            style={{ border: "1px solid var(--border-medium)" }}
+          >
+            Enviar
+          </button>
+        </div>
+      )}
 
       {podeDecidir && (
         <div className="flex flex-col gap-2 border-t pt-3" style={{ borderColor: "var(--border-subtle)" }}>

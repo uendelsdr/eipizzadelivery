@@ -15,8 +15,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Gestão de Demandas",
-  description: "Controle de demandas e tarefas — Ei Pizza Delivery",
+  title: "OkEI — Gestão de Demandas",
+  description: "Controle de demandas e aprovações — Ei Pizza Delivery",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

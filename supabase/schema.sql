@@ -45,7 +45,9 @@ create trigger on_auth_user_created
 -- 2. Tabela de tarefas / demandas
 create table if not exists public.tasks (
   id uuid primary key default gen_random_uuid(),
+  numero bigint generated always as identity,
   titulo text not null,
+  descricao text,
   observacoes text,
   prioridade text not null default 'media' check (prioridade in ('baixa', 'media', 'alta')),
   status text not null default 'pendente' check (status in ('pendente', 'em_andamento', 'concluida')),
@@ -99,3 +101,43 @@ create trigger on_tasks_updated
 create index if not exists tasks_prazo_idx on public.tasks (prazo);
 create index if not exists tasks_status_idx on public.tasks (status);
 create index if not exists tasks_responsavel_idx on public.tasks (responsavel_id);
+
+-- 3. Tabela de solicitacoes (aprovacao de mudancas/compras)
+create table if not exists public.solicitacoes (
+  id uuid primary key default gen_random_uuid(),
+  numero bigint generated always as identity,
+  titulo text not null,
+  tipo text not null default 'outro' check (tipo in ('compra', 'mudanca', 'outro')),
+  descricao text,
+  valor numeric(10,2),
+  solicitante_id uuid not null references public.profiles (id),
+  status text not null default 'pendente' check (status in ('pendente', 'aprovada', 'rejeitada')),
+  decidido_por uuid references public.profiles (id),
+  comentario_decisao text,
+  created_at timestamptz not null default now(),
+  decided_at timestamptz
+);
+
+alter table public.solicitacoes enable row level security;
+
+create policy "Usuarios autenticados podem ver todas as solicitacoes"
+  on public.solicitacoes for select
+  to authenticated
+  using (true);
+
+create policy "Usuarios autenticados podem criar solicitacoes"
+  on public.solicitacoes for insert
+  to authenticated
+  with check (true);
+
+create policy "Usuarios autenticados podem atualizar solicitacoes"
+  on public.solicitacoes for update
+  to authenticated
+  using (true);
+
+create policy "Usuarios autenticados podem excluir solicitacoes"
+  on public.solicitacoes for delete
+  to authenticated
+  using (true);
+
+create index if not exists solicitacoes_status_idx on public.solicitacoes (status);

@@ -1,5 +1,7 @@
 export type Prioridade = "baixa" | "media" | "alta";
 export type Status = "pendente" | "em_andamento" | "concluida";
+export type TipoSolicitacao = "compra" | "mudanca" | "outro";
+export type StatusSolicitacao = "pendente" | "aprovada" | "rejeitada";
 
 export type Profile = {
   id: string;
@@ -9,7 +11,9 @@ export type Profile = {
 
 export type Task = {
   id: string;
+  numero: number;
   titulo: string;
+  descricao: string | null;
   observacoes: string | null;
   prioridade: Prioridade;
   status: Status;
@@ -25,6 +29,26 @@ export type TaskComResponsavel = Task & {
   criador: Profile | null;
 };
 
+export type Solicitacao = {
+  id: string;
+  numero: number;
+  titulo: string;
+  tipo: TipoSolicitacao;
+  descricao: string | null;
+  valor: number | null;
+  solicitante_id: string;
+  status: StatusSolicitacao;
+  decidido_por: string | null;
+  comentario_decisao: string | null;
+  created_at: string;
+  decided_at: string | null;
+};
+
+export type SolicitacaoComPerfis = Solicitacao & {
+  solicitante: Profile | null;
+  decisor: Profile | null;
+};
+
 export const PRIORIDADE_LABEL: Record<Prioridade, string> = {
   baixa: "Baixa",
   media: "Média",
@@ -35,4 +59,16 @@ export const STATUS_LABEL: Record<Status, string> = {
   pendente: "Pendente",
   em_andamento: "Em andamento",
   concluida: "Concluída",
+};
+
+export const TIPO_SOLICITACAO_LABEL: Record<TipoSolicitacao, string> = {
+  compra: "Compra",
+  mudanca: "Mudança",
+  outro: "Outro",
+};
+
+export const STATUS_SOLICITACAO_LABEL: Record<StatusSolicitacao, string> = {
+  pendente: "Pendente",
+  aprovada: "Aprovada",
+  rejeitada: "Rejeitada",
 };

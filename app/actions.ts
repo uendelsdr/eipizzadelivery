@@ -52,10 +52,12 @@ export async function criarTarefa(formData: FormData) {
   const prazo = String(formData.get("prazo") || "") || null;
   const responsavelId = String(formData.get("responsavel_id") || user.id);
   const prioridade = String(formData.get("prioridade") || "media") as Prioridade;
+  const descricao = String(formData.get("descricao") || "").trim() || null;
   const observacoes = String(formData.get("observacoes") || "").trim() || null;
 
   const { error } = await supabase.from("tasks").insert({
     titulo,
+    descricao,
     observacoes,
     prioridade,
     prazo,
@@ -76,12 +78,14 @@ export async function atualizarTarefa(id: string, formData: FormData) {
   const prazo = String(formData.get("prazo") || "") || null;
   const responsavelId = String(formData.get("responsavel_id") || "");
   const prioridade = String(formData.get("prioridade") || "media") as Prioridade;
+  const descricao = String(formData.get("descricao") || "").trim() || null;
   const observacoes = String(formData.get("observacoes") || "").trim() || null;
 
   const { error } = await supabase
     .from("tasks")
     .update({
       titulo,
+      descricao,
       observacoes,
       prioridade,
       prazo,
@@ -101,7 +105,7 @@ export async function atualizarStatus(id: string, status: Status) {
     .update({ status })
     .eq("id", id)
     .select(
-      "titulo, prioridade, prazo, responsavel_id, criado_por, responsavel:profiles!tasks_responsavel_id_fkey(nome)",
+      "numero, titulo, prioridade, prazo, responsavel_id, criado_por, responsavel:profiles!tasks_responsavel_id_fkey(nome)",
     )
     .single();
 
@@ -124,6 +128,7 @@ export async function atualizarStatus(id: string, status: Status) {
     tarefa,
     `Demanda atualizada: ${tarefa.titulo}`,
     emailMudancaStatus({
+      numero: tarefa.numero,
       titulo: tarefa.titulo,
       statusLabel: STATUS_LABEL[status],
       autorNome: autor?.nome ?? "Alguém",

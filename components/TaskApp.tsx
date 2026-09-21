@@ -1,10 +1,9 @@
 "use client";
 
-import Image from "next/image";
-import { useMemo, useState, useTransition } from "react";
-import { sair } from "@/app/actions";
+import { useMemo, useState } from "react";
 import { ehAtrasada } from "@/lib/taskDisplay";
 import { STATUS_LABEL, type Profile, type Status, type TaskComResponsavel } from "@/lib/types";
+import AppHeader from "./AppHeader";
 import TaskBoard from "./TaskBoard";
 import TaskForm from "./TaskForm";
 import TaskRow from "./TaskRow";
@@ -28,7 +27,6 @@ export default function TaskApp({
   const [filtroResponsavel, setFiltroResponsavel] = useState("todos");
   const [somenteAtrasadas, setSomenteAtrasadas] = useState(false);
   const [visao, setVisao] = useState<Visao>("lista");
-  const [, startTransition] = useTransition();
 
   const hoje = new Date().toISOString().slice(0, 10);
   const currentUser = profiles.find((p) => p.id === currentUserId);
@@ -42,7 +40,7 @@ export default function TaskApp({
       if (somenteAtrasadas && !ehAtrasada(t.prazo, t.status, hoje)) return false;
       if (
         q &&
-        !`${t.titulo} ${t.observacoes ?? ""} ${t.responsavel?.nome ?? ""}`
+        !`${t.numero} ${t.titulo} ${t.descricao ?? ""} ${t.observacoes ?? ""} ${t.responsavel?.nome ?? ""}`
           .toLowerCase()
           .includes(q)
       )
@@ -104,43 +102,7 @@ export default function TaskApp({
 
   return (
     <div className="min-h-screen pb-20">
-      <header
-        className="sticky top-0 z-20 backdrop-blur-lg"
-        style={{ background: "rgba(12,11,11,.84)", borderBottom: "1px solid var(--border-subtle)" }}
-      >
-        <div className="mx-auto flex max-w-[1220px] flex-wrap items-center gap-4.5 px-5 py-3.5 sm:px-7">
-          <Image src="/logo.png" alt="Ei Pizza Delivery" width={110} height={80} className="h-9 w-auto" priority />
-          <div className="h-6.5 w-px" style={{ background: "var(--border-medium)" }} />
-          <div className="flex flex-col gap-0.5">
-            <span className="text-sm font-bold tracking-tight text-white">Gestão de Demandas</span>
-            <span className="text-[11.5px]" style={{ color: "var(--text-tertiary)" }}>
-              Diretoria · Ei Pizza Delivery
-            </span>
-          </div>
-          <div className="flex-1" />
-          <div className="flex items-center gap-2.5">
-            <div
-              className="flex items-center gap-2.5 rounded-full py-1.5 pr-3.5 pl-1.5"
-              style={{ border: "1px solid var(--border-medium)", background: "rgba(255,255,255,.03)" }}
-            >
-              <div
-                className="grid h-6.5 w-6.5 place-items-center rounded-full text-[11px] font-extrabold text-white"
-                style={{ background: "var(--accent)" }}
-              >
-                {(currentUser?.nome ?? "?").slice(0, 1).toUpperCase()}
-              </div>
-              <span className="text-xs font-semibold text-white">{currentUser?.nome ?? "usuário"}</span>
-            </div>
-            <button
-              onClick={() => startTransition(async () => await sair())}
-              className="cursor-pointer rounded-lg px-3.5 py-2 text-xs font-semibold text-white/70 transition-colors hover:bg-white hover:text-black"
-              style={{ border: "1px solid var(--border-medium)" }}
-            >
-              Sair
-            </button>
-          </div>
-        </div>
-      </header>
+      <AppHeader profiles={profiles} currentUserId={currentUserId} />
 
       <main className="mx-auto max-w-[1220px] px-5 pt-7 sm:px-7">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-6">
@@ -155,7 +117,7 @@ export default function TaskApp({
           <button
             onClick={() => setShowForm(true)}
             className="flex cursor-pointer items-center gap-2 rounded-[11px] px-5 py-3 text-sm font-bold text-white transition-transform hover:-translate-y-px"
-            style={{ background: "var(--accent)", boxShadow: "0 10px 24px -12px rgba(206,32,24,1)" }}
+            style={{ background: "var(--accent)", boxShadow: "0 6px 16px -8px rgba(206,32,24,.5)" }}
           >
             <span className="text-base leading-none">+</span>Nova demanda
           </button>

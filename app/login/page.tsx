@@ -1,5 +1,5 @@
-import Image from "next/image";
 import ConfigMissing from "@/components/ConfigMissing";
+import OkeiLogo from "@/components/OkeiMark";
 import { hasSupabaseConfig } from "@/lib/supabase/config";
 import { login } from "./actions";
 
@@ -21,19 +21,11 @@ export default async function LoginPage({
           background: "#151313",
         }}
       >
-        <Image
-          src="/logo.png"
-          alt="Ei Pizza Delivery"
-          width={110}
-          height={80}
-          className="mb-5 h-11 w-auto"
-          priority
-        />
-        <h1 className="mb-1 text-xl font-bold tracking-tight text-white">
-          Gestão de Demandas
-        </h1>
+        <div className="mb-5">
+          <OkeiLogo iconSize={40} textSize="text-2xl" />
+        </div>
         <p className="mb-6 text-sm" style={{ color: "var(--text-tertiary)" }}>
-          Entre com seu e-mail e senha
+          Gestão de Demandas · Ei Pizza Delivery
         </p>
 
         {error && (
@@ -89,7 +81,7 @@ export default async function LoginPage({
             className="mt-2 cursor-pointer rounded-lg px-4 py-2.5 text-sm font-bold text-white transition-colors"
             style={{
               background: "var(--accent)",
-              boxShadow: "0 10px 24px -12px rgba(206,32,24,1)",
+              boxShadow: "0 6px 16px -8px rgba(206,32,24,.5)",
             }}
           >
             Entrar

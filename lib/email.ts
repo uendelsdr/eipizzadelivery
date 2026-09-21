@@ -69,8 +69,8 @@ function emailShell(preheader: string, tituloSecao: string, bodyHtml: string) {
           <table role="presentation" width="100%" style="max-width:520px;background:${COR.card};border-radius:14px;overflow:hidden;border:1px solid ${COR.borda};">
             <tr>
               <td style="background:${COR.destaque};padding:20px 28px;">
-                <span style="color:#ffffff;font-size:14px;font-weight:800;letter-spacing:.03em;font-family:Arial,Helvetica,sans-serif;">EI PIZZA DELIVERY</span>
-                <div style="color:rgba(255,255,255,.85);font-size:12px;margin-top:2px;">Gestão de Demandas</div>
+                <span style="color:#ffffff;font-size:14px;font-weight:800;letter-spacing:.03em;font-family:Arial,Helvetica,sans-serif;">OKEI</span>
+                <div style="color:rgba(255,255,255,.85);font-size:12px;margin-top:2px;">Gestão de Demandas · Ei Pizza Delivery</div>
               </td>
             </tr>
             <tr>
@@ -93,6 +93,7 @@ function emailShell(preheader: string, tituloSecao: string, bodyHtml: string) {
 }
 
 export function emailMudancaStatus({
+  numero,
   titulo,
   statusLabel,
   autorNome,
@@ -100,6 +101,7 @@ export function emailMudancaStatus({
   prioridadeLabel,
   prazoTexto,
 }: {
+  numero: number;
   titulo: string;
   statusLabel: string;
   autorNome: string;
@@ -108,6 +110,7 @@ export function emailMudancaStatus({
   prazoTexto: string;
 }) {
   const body = `
+    <p style="margin:0 0 4px;color:${COR.suave};font-size:11.5px;font-weight:700;">Demanda nº ${numero}</p>
     <h1 style="margin:0 0 14px;color:${COR.texto};font-size:19px;font-weight:800;line-height:1.35;">${titulo}</h1>
     <p style="margin:0 0 18px;color:${COR.texto};font-size:14px;line-height:1.6;">
       <strong>${autorNome}</strong> alterou o status desta demanda para ${badge(statusLabel, "#ffffff", COR.destaque)}.
@@ -117,13 +120,13 @@ export function emailMudancaStatus({
       ${linha("Prioridade", prioridadeLabel)}
       ${linha("Prazo", prazoTexto)}
     </table>
-    ${botao(appUrl(), "Abrir Gestão de Demandas")}
+    ${botao(appUrl(), "Abrir OkEI")}
   `;
   return emailShell(`${titulo} foi atualizada para ${statusLabel}`, "Demanda atualizada", body);
 }
 
 export function emailDemandasAtrasadas(
-  tarefas: { titulo: string; prazo: string; prioridadeLabel: string }[],
+  tarefas: { numero: number; titulo: string; prazo: string; prioridadeLabel: string }[],
 ) {
   const plural = tarefas.length > 1;
   const linhas = tarefas
@@ -131,10 +134,10 @@ export function emailDemandasAtrasadas(
       (t) => `
       <tr>
         <td style="padding:12px 0;border-bottom:1px solid ${COR.borda};">
-          <div style="color:${COR.texto};font-size:13.5px;font-weight:700;margin-bottom:4px;">${t.titulo}</div>
+          <div style="color:${COR.texto};font-size:13.5px;font-weight:700;margin-bottom:4px;">Nº ${t.numero} — ${t.titulo}</div>
           <div>
             ${badge(t.prioridadeLabel, COR.texto, "#f4f4f5")}
-            <span style="color:${COR.destaque};font-size:12px;font-weight:700;margin-left:8px;">Prazo: ${formatarPrazo(t.prazo)}</span>
+            <span style="color:${COR.destaque};font-size:12px;font-weight:700;margin-left:8px;">Prazo: ${formatarData(t.prazo)}</span>
           </div>
         </td>
       </tr>`,
@@ -155,7 +158,77 @@ export function emailDemandasAtrasadas(
   );
 }
 
-function formatarPrazo(prazo: string) {
-  const [ano, mes, dia] = prazo.split("-");
+export function emailNovaSolicitacao({
+  numero,
+  titulo,
+  tipoLabel,
+  descricao,
+  valor,
+  solicitanteNome,
+}: {
+  numero: number;
+  titulo: string;
+  tipoLabel: string;
+  descricao: string | null;
+  valor: number | null;
+  solicitanteNome: string;
+}) {
+  const body = `
+    <p style="margin:0 0 4px;color:${COR.suave};font-size:11.5px;font-weight:700;">Solicitação nº ${numero}</p>
+    <h1 style="margin:0 0 14px;color:${COR.texto};font-size:19px;font-weight:800;line-height:1.35;">${titulo}</h1>
+    <p style="margin:0 0 18px;color:${COR.texto};font-size:14px;line-height:1.6;">
+      <strong>${solicitanteNome}</strong> pediu sua aprovação para uma solicitação de ${badge(tipoLabel, "#ffffff", COR.destaque)}.
+    </p>
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-top:1px solid ${COR.borda};padding-top:6px;">
+      ${linha("Solicitante", solicitanteNome)}
+      ${linha("Tipo", tipoLabel)}
+      ${valor != null ? linha("Valor", formatarValor(valor)) : ""}
+      ${descricao ? linha("Descrição", descricao) : ""}
+    </table>
+    ${botao(appUrl() + "/solicitacoes", "Ver e decidir")}
+  `;
+  return emailShell(
+    `${solicitanteNome} pediu aprovação: ${titulo}`,
+    "Nova solicitação",
+    body,
+  );
+}
+
+export function emailDecisaoSolicitacao({
+  numero,
+  titulo,
+  aprovada,
+  decisorNome,
+  comentario,
+}: {
+  numero: number;
+  titulo: string;
+  aprovada: boolean;
+  decisorNome: string;
+  comentario: string | null;
+}) {
+  const statusLabel = aprovada ? "Aprovada" : "Rejeitada";
+  const body = `
+    <p style="margin:0 0 4px;color:${COR.suave};font-size:11.5px;font-weight:700;">Solicitação nº ${numero}</p>
+    <h1 style="margin:0 0 14px;color:${COR.texto};font-size:19px;font-weight:800;line-height:1.35;">${titulo}</h1>
+    <p style="margin:0 0 18px;color:${COR.texto};font-size:14px;line-height:1.6;">
+      <strong>${decisorNome}</strong> ${aprovada ? "aprovou" : "rejeitou"} sua solicitação: ${badge(statusLabel, "#ffffff", aprovada ? "#16a34a" : COR.destaque)}.
+    </p>
+    ${comentario ? `<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-top:1px solid ${COR.borda};padding-top:6px;">${linha("Comentário", comentario)}</table>` : ""}
+    ${botao(appUrl() + "/solicitacoes", "Abrir OkEI")}
+  `;
+  return emailShell(
+    `Solicitação ${statusLabel.toLowerCase()}: ${titulo}`,
+    "Solicitação decidida",
+    body,
+  );
+}
+
+function formatarData(data: string) {
+  const [ano, mes, dia] = data.split("-");
   return `${dia}/${mes}/${ano}`;
+}
+
+function formatarValor(valor: number) {
+  return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }

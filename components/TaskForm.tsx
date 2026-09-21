@@ -56,7 +56,7 @@ export default function TaskForm({
         >
           <span className="h-5.5 w-2 rounded-full" style={{ background: "var(--accent)" }} />
           <h2 className="text-lg font-bold tracking-tight text-white">
-            {task ? "Editar demanda" : "Nova demanda"}
+            {task ? `Editar demanda nº ${task.numero}` : "Nova demanda"}
           </h2>
           <button
             type="button"
@@ -86,12 +86,24 @@ export default function TaskForm({
           </label>
 
           <label className={labelClass} style={{ color: "var(--text-tertiary)" }}>
+            Descrição
+            <textarea
+              name="descricao"
+              rows={3}
+              defaultValue={task?.descricao ?? ""}
+              placeholder="O que precisa ser feito e por quê"
+              className="resize-y rounded-lg px-3.5 py-3 text-sm leading-relaxed font-normal text-white normal-case outline-none"
+              style={inputStyle}
+            />
+          </label>
+
+          <label className={labelClass} style={{ color: "var(--text-tertiary)" }}>
             Observações
             <textarea
               name="observacoes"
-              rows={3}
+              rows={2}
               defaultValue={task?.observacoes ?? ""}
-              placeholder="O que precisa ser feito e por quê"
+              placeholder="Notas adicionais (opcional)"
               className="resize-y rounded-lg px-3.5 py-3 text-sm leading-relaxed font-normal text-white normal-case outline-none"
               style={inputStyle}
             />
@@ -171,7 +183,7 @@ export default function TaskForm({
             form="task-form"
             disabled={isPending}
             className="cursor-pointer rounded-lg px-6 py-3 text-[13.5px] font-bold text-white transition-colors disabled:opacity-50"
-            style={{ background: "var(--accent)", boxShadow: "0 10px 22px -12px rgba(206,32,24,1)" }}
+            style={{ background: "var(--accent)", boxShadow: "0 6px 16px -8px rgba(206,32,24,.5)" }}
           >
             {isPending ? "Salvando..." : task ? "Salvar alterações" : "Criar demanda"}
           </button>

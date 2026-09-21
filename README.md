@@ -1,8 +1,10 @@
-# Gestão de Demandas
+# OkEI — Gestão de Demandas
 
-App web para você e seu diretor operacional controlarem demandas/tarefas: título,
-prazo, prioridade, status e observações, com destaque visual para demandas atrasadas.
-Feito com Next.js + Supabase (banco de dados e login).
+App web para você e seu diretor operacional controlarem demandas/tarefas (título,
+descrição, prazo, prioridade, status, observações) e solicitações de aprovação
+(compras/mudanças), com destaque visual para demandas atrasadas e notificação por
+e-mail. Feito com Next.js + Supabase (banco de dados e login), com a marca Ei Pizza
+Delivery.
 
 ## 1. Rodar localmente
 
@@ -21,6 +23,8 @@ Feito com Next.js + Supabase (banco de dados e login).
 
 1. No painel do Supabase, abra **SQL Editor > New query**.
 2. Cole todo o conteúdo do arquivo [`supabase/schema.sql`](./supabase/schema.sql) e clique em **Run**.
+   (Se o banco já existia antes das demandas terem número/descrição e da aba de
+   solicitações, rode também [`supabase/migration_002_numero_descricao_solicitacoes.sql`](./supabase/migration_002_numero_descricao_solicitacoes.sql).)
 
 ### 1.3. Criar os 2 usuários (você e o diretor operacional)
 
@@ -106,22 +110,47 @@ O agendamento do job diário já está configurado em [`vercel.json`](./vercel.j
 (roda 12:00 UTC = 09:00 no horário de Brasília). Enquanto `RESEND_API_KEY` não estiver
 configurada, os envios são simplesmente ignorados — nada quebra.
 
-## 4. Estrutura do projeto
+## 4. Solicitações de aprovação
+
+Além das demandas, existe uma segunda aba (**Solicitações**) para pedidos de compra,
+mudança ou outro tipo que precisam da aprovação do outro usuário:
+
+- Qualquer um dos dois cria uma solicitação (tipo, título, descrição e, se for
+  compra, um valor estimado).
+- Só quem **não** criou a solicitação pode aprová-la ou rejeitá-la (com um
+  comentário opcional).
+- O outro usuário recebe um e-mail quando uma nova solicitação precisa da decisão
+  dele, e o solicitante recebe um e-mail quando ela é aprovada ou rejeitada.
+
+## 5. Estrutura do projeto
 
 ```
 app/
-  actions.ts          -> Server Actions: criar/editar/excluir tarefa, mudar status/prioridade
-  page.tsx            -> Lista de demandas (página protegida)
-  login/              -> Tela de login
+  actions.ts              -> Server Actions das demandas
+  page.tsx                -> Lista de demandas (página protegida)
+  login/                  -> Tela de login
+  solicitacoes/
+    actions.ts            -> Server Actions das solicitações (criar/decidir/excluir)
+    page.tsx              -> Aba de solicitações
+  icon.tsx, apple-icon.tsx -> Ícone do app (gerado por código)
 lib/
-  types.ts            -> Tipos das tarefas/perfis
-  supabase/           -> Clientes Supabase (browser, servidor, proxy de sessão)
+  types.ts                -> Tipos de tarefas, perfis e solicitações
+  taskDisplay.ts          -> Cores/labels de prioridade, status e prazo das demandas
+  solicitacaoDisplay.ts   -> Cores/labels das solicitações
+  email.ts                -> Templates e envio de e-mail (Resend)
+  supabase/               -> Clientes Supabase (browser, servidor, proxy de sessão)
 components/
-  TaskApp.tsx          -> Lista com filtros
-  TaskRow.tsx           -> Cada demanda com seus próprios controles (status, prioridade, editar, excluir)
-  TaskForm.tsx          -> Formulário de criar/editar
+  AppHeader.tsx            -> Cabeçalho com navegação entre Demandas e Solicitações
+  OkeiMark.tsx             -> Marca OkEI (ícone + wordmark)
+  TaskApp.tsx              -> Lista de demandas com filtros e visão em quadro
+  TaskRow.tsx, TaskBoard.tsx -> Card de demanda (lista e Kanban)
+  TaskForm.tsx             -> Formulário de criar/editar demanda
+  SolicitacoesApp.tsx      -> Lista de solicitações com filtro por status
+  SolicitacaoRow.tsx       -> Card de solicitação (com aprovar/rejeitar)
+  SolicitacaoForm.tsx      -> Formulário de nova solicitação
 supabase/
-  schema.sql          -> Script para criar as tabelas no Supabase
+  schema.sql                                     -> Schema completo (novas instalações)
+  migration_002_numero_descricao_solicitacoes.sql -> Migração incremental (bancos já existentes)
 ```
 
 ## Comandos

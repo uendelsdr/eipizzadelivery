@@ -45,6 +45,9 @@ export default function TaskRow({
 
       <div className="flex min-w-[240px] flex-1 flex-col gap-2">
         <div className="flex flex-wrap items-center gap-2">
+          <span className="font-mono text-[11.5px] font-semibold" style={{ color: "var(--text-muted)" }}>
+            Nº {task.numero}
+          </span>
           <h3 className="text-base font-bold tracking-tight text-white">
             {task.titulo}
           </h3>
@@ -62,12 +65,21 @@ export default function TaskRow({
           </span>
         </div>
 
-        {task.observacoes && (
+        {task.descricao && (
           <p
             className="max-w-[70ch] text-sm leading-relaxed whitespace-pre-wrap"
             style={{ color: "var(--text-secondary)" }}
           >
-            {task.observacoes}
+            {task.descricao}
+          </p>
+        )}
+
+        {task.observacoes && (
+          <p
+            className="max-w-[70ch] text-xs leading-relaxed whitespace-pre-wrap"
+            style={{ color: "var(--text-tertiary)" }}
+          >
+            <strong style={{ color: "var(--text-secondary)" }}>Obs:</strong> {task.observacoes}
           </p>
         )}
 

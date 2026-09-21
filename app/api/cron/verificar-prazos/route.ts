@@ -19,7 +19,7 @@ export async function GET(request: Request) {
   const { data: atrasadas, error } = await supabase
     .from("tasks")
     .select(
-      "titulo, prazo, prioridade, responsavel:profiles!tasks_responsavel_id_fkey(email)",
+      "numero, titulo, prazo, prioridade, responsavel:profiles!tasks_responsavel_id_fkey(email)",
     )
     .lt("prazo", hoje)
     .neq("status", "concluida");
@@ -30,7 +30,7 @@ export async function GET(request: Request) {
 
   const porEmail = new Map<
     string,
-    { titulo: string; prazo: string; prioridadeLabel: string }[]
+    { numero: number; titulo: string; prazo: string; prioridadeLabel: string }[]
   >();
 
   for (const tarefa of atrasadas ?? []) {
@@ -41,6 +41,7 @@ export async function GET(request: Request) {
 
     const lista = porEmail.get(responsavel.email) ?? [];
     lista.push({
+      numero: tarefa.numero,
       titulo: tarefa.titulo,
       prazo: tarefa.prazo,
       prioridadeLabel: PRIORIDADE_LABEL[tarefa.prioridade as Prioridade],

@@ -83,6 +83,9 @@ function BoardCard({
     >
       <div className="flex items-start gap-2">
         <h4 className="flex-1 text-sm leading-snug font-bold tracking-tight text-white">
+          <span className="font-mono text-[10.5px] font-semibold" style={{ color: "var(--text-muted)" }}>
+            Nº {task.numero}
+          </span>{" "}
           {task.titulo}
         </h4>
         <span
@@ -93,9 +96,9 @@ function BoardCard({
         </span>
       </div>
 
-      {task.observacoes && (
+      {task.descricao && (
         <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-          {task.observacoes}
+          {task.descricao}
         </p>
       )}
 

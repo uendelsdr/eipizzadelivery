@@ -73,6 +73,8 @@ Abra [http://localhost:3000](http://localhost:3000) e entre com um dos e-mails/s
 
 Além do destaque visual dentro do app para demandas atrasadas, o sistema envia e-mails:
 
+- **Nova demanda**: ao criar uma demanda para o outro usuário, ele recebe um e-mail
+  com os detalhes.
 - **Mudança de status**: quando um dos dois usuários muda o status de uma demanda,
   o outro recebe um e-mail avisando.
 - **Prazo vencido**: todo dia, um job automático (Vercel Cron) verifica as demandas

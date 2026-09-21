@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { emailMudancaStatus, enviarEmail } from "@/lib/email";
+import { emailMudancaStatus, emailNovaDemanda, enviarEmail } from "@/lib/email";
 import { createClient } from "@/lib/supabase/server";
 import { PRIORIDADE_LABEL, STATUS_LABEL, type Prioridade, type Status } from "@/lib/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -55,18 +55,50 @@ export async function criarTarefa(formData: FormData) {
   const descricao = String(formData.get("descricao") || "").trim() || null;
   const observacoes = String(formData.get("observacoes") || "").trim() || null;
 
-  const { error } = await supabase.from("tasks").insert({
-    titulo,
-    descricao,
-    observacoes,
-    prioridade,
-    prazo,
-    responsavel_id: responsavelId,
-    criado_por: user.id,
-  });
+  const { data: tarefa, error } = await supabase
+    .from("tasks")
+    .insert({
+      titulo,
+      descricao,
+      observacoes,
+      prioridade,
+      prazo,
+      responsavel_id: responsavelId,
+      criado_por: user.id,
+    })
+    .select(
+      "numero, titulo, descricao, prioridade, prazo, responsavel_id, criado_por, responsavel:profiles!tasks_responsavel_id_fkey(nome)",
+    )
+    .single();
 
   if (error) throw new Error(error.message);
   revalidatePath("/");
+
+  const { data: autor } = await supabase
+    .from("profiles")
+    .select("nome")
+    .eq("id", user.id)
+    .single();
+
+  const responsavel = Array.isArray(tarefa.responsavel)
+    ? tarefa.responsavel[0]
+    : tarefa.responsavel;
+
+  await notificarSeRelacionado(
+    supabase,
+    user.id,
+    tarefa,
+    `Nova demanda: ${tarefa.titulo}`,
+    emailNovaDemanda({
+      numero: tarefa.numero,
+      titulo: tarefa.titulo,
+      descricao: tarefa.descricao,
+      autorNome: autor?.nome ?? "Alguém",
+      responsavelNome: responsavel?.nome ?? "-",
+      prioridadeLabel: PRIORIDADE_LABEL[tarefa.prioridade as Prioridade],
+      prazoTexto: formatarPrazo(tarefa.prazo),
+    }),
+  );
 }
 
 export async function atualizarTarefa(id: string, formData: FormData) {

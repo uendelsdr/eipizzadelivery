@@ -92,6 +92,40 @@ function emailShell(preheader: string, tituloSecao: string, bodyHtml: string) {
 </html>`;
 }
 
+export function emailNovaDemanda({
+  numero,
+  titulo,
+  descricao,
+  autorNome,
+  responsavelNome,
+  prioridadeLabel,
+  prazoTexto,
+}: {
+  numero: number;
+  titulo: string;
+  descricao: string | null;
+  autorNome: string;
+  responsavelNome: string;
+  prioridadeLabel: string;
+  prazoTexto: string;
+}) {
+  const body = `
+    <p style="margin:0 0 4px;color:${COR.suave};font-size:11.5px;font-weight:700;">Demanda nº ${numero}</p>
+    <h1 style="margin:0 0 14px;color:${COR.texto};font-size:19px;font-weight:800;line-height:1.35;">${titulo}</h1>
+    <p style="margin:0 0 18px;color:${COR.texto};font-size:14px;line-height:1.6;">
+      <strong>${autorNome}</strong> criou uma nova demanda para você.
+    </p>
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-top:1px solid ${COR.borda};padding-top:6px;">
+      ${linha("Responsável", responsavelNome)}
+      ${linha("Prioridade", prioridadeLabel)}
+      ${linha("Prazo", prazoTexto)}
+      ${descricao ? linha("Descrição", descricao) : ""}
+    </table>
+    ${botao(appUrl(), "Abrir OkEI")}
+  `;
+  return emailShell(`Nova demanda: ${titulo}`, "Nova demanda", body);
+}
+
 export function emailMudancaStatus({
   numero,
   titulo,

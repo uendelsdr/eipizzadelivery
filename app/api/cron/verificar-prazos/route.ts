@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { emailDemandasAtrasadas, enviarEmail } from "@/lib/email";
+import { PRIORIDADE_LABEL, type Prioridade } from "@/lib/types";
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
@@ -17,7 +18,9 @@ export async function GET(request: Request) {
 
   const { data: atrasadas, error } = await supabase
     .from("tasks")
-    .select("titulo, prazo, responsavel:profiles!tasks_responsavel_id_fkey(email)")
+    .select(
+      "titulo, prazo, prioridade, responsavel:profiles!tasks_responsavel_id_fkey(email)",
+    )
     .lt("prazo", hoje)
     .neq("status", "concluida");
 
@@ -25,7 +28,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const porEmail = new Map<string, { titulo: string; prazo: string }[]>();
+  const porEmail = new Map<
+    string,
+    { titulo: string; prazo: string; prioridadeLabel: string }[]
+  >();
 
   for (const tarefa of atrasadas ?? []) {
     const responsavel = Array.isArray(tarefa.responsavel)
@@ -34,7 +40,11 @@ export async function GET(request: Request) {
     if (!responsavel?.email || !tarefa.prazo) continue;
 
     const lista = porEmail.get(responsavel.email) ?? [];
-    lista.push({ titulo: tarefa.titulo, prazo: tarefa.prazo });
+    lista.push({
+      titulo: tarefa.titulo,
+      prazo: tarefa.prazo,
+      prioridadeLabel: PRIORIDADE_LABEL[tarefa.prioridade as Prioridade],
+    });
     porEmail.set(responsavel.email, lista);
   }
 

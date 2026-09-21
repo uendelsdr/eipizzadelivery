@@ -3,6 +3,15 @@ import { Resend } from "resend";
 const FROM =
   process.env.EMAIL_FROM || "Gestão de Demandas <onboarding@resend.dev>";
 
+const COR = {
+  bg: "#f4f4f5",
+  card: "#ffffff",
+  texto: "#18181b",
+  suave: "#71717a",
+  borda: "#e4e4e7",
+  destaque: "#ce2018",
+};
+
 function appUrl() {
   return process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 }
@@ -22,33 +31,128 @@ export async function enviarEmail(to: string, subject: string, html: string) {
   }
 }
 
+function badge(label: string, cor: string, fundo: string) {
+  return `<span style="display:inline-block;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:${cor};background:${fundo};">${label}</span>`;
+}
+
+function botao(href: string, label: string) {
+  return `
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:22px;">
+      <tr>
+        <td style="background:${COR.destaque};border-radius:8px;">
+          <a href="${href}" style="display:inline-block;padding:12px 22px;color:#ffffff;font-size:13px;font-weight:700;text-decoration:none;font-family:Arial,Helvetica,sans-serif;">${label}</a>
+        </td>
+      </tr>
+    </table>`;
+}
+
+function linha(label: string, valor: string) {
+  return `
+    <tr>
+      <td style="padding:6px 0;color:${COR.suave};font-size:12px;width:110px;vertical-align:top;">${label}</td>
+      <td style="padding:6px 0;color:${COR.texto};font-size:13px;font-weight:600;">${valor}</td>
+    </tr>`;
+}
+
+function emailShell(preheader: string, tituloSecao: string, bodyHtml: string) {
+  return `<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+  <body style="margin:0;padding:0;background:${COR.bg};font-family:Arial,Helvetica,sans-serif;">
+    <span style="display:none;max-height:0;overflow:hidden;opacity:0;">${preheader}</span>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${COR.bg};padding:32px 16px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" style="max-width:520px;background:${COR.card};border-radius:14px;overflow:hidden;border:1px solid ${COR.borda};">
+            <tr>
+              <td style="background:${COR.destaque};padding:20px 28px;">
+                <span style="color:#ffffff;font-size:14px;font-weight:800;letter-spacing:.03em;font-family:Arial,Helvetica,sans-serif;">EI PIZZA DELIVERY</span>
+                <div style="color:rgba(255,255,255,.85);font-size:12px;margin-top:2px;">Gestão de Demandas</div>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:28px;">
+                <p style="margin:0 0 6px;color:${COR.suave};font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;font-weight:700;">${tituloSecao}</p>
+                ${bodyHtml}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:16px 28px;border-top:1px solid ${COR.borda};">
+                <span style="color:${COR.suave};font-size:11px;">Notificação automática do sistema de Gestão de Demandas — Ei Pizza Delivery. Não é necessário responder este e-mail.</span>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+}
+
 export function emailMudancaStatus({
   titulo,
   statusLabel,
   autorNome,
+  responsavelNome,
+  prioridadeLabel,
+  prazoTexto,
 }: {
   titulo: string;
   statusLabel: string;
   autorNome: string;
+  responsavelNome: string;
+  prioridadeLabel: string;
+  prazoTexto: string;
 }) {
-  return `
-    <p>${autorNome} atualizou a demanda <strong>${titulo}</strong> para <strong>${statusLabel}</strong>.</p>
-    <p><a href="${appUrl()}">Abrir Gestão de Demandas</a></p>
+  const body = `
+    <h1 style="margin:0 0 14px;color:${COR.texto};font-size:19px;font-weight:800;line-height:1.35;">${titulo}</h1>
+    <p style="margin:0 0 18px;color:${COR.texto};font-size:14px;line-height:1.6;">
+      <strong>${autorNome}</strong> alterou o status desta demanda para ${badge(statusLabel, "#ffffff", COR.destaque)}.
+    </p>
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-top:1px solid ${COR.borda};padding-top:6px;">
+      ${linha("Responsável", responsavelNome)}
+      ${linha("Prioridade", prioridadeLabel)}
+      ${linha("Prazo", prazoTexto)}
+    </table>
+    ${botao(appUrl(), "Abrir Gestão de Demandas")}
   `;
+  return emailShell(`${titulo} foi atualizada para ${statusLabel}`, "Demanda atualizada", body);
 }
 
 export function emailDemandasAtrasadas(
-  tarefas: { titulo: string; prazo: string }[],
+  tarefas: { titulo: string; prazo: string; prioridadeLabel: string }[],
 ) {
-  const itens = tarefas
-    .map((t) => `<li>${t.titulo} — prazo: ${formatarPrazo(t.prazo)}</li>`)
+  const plural = tarefas.length > 1;
+  const linhas = tarefas
+    .map(
+      (t) => `
+      <tr>
+        <td style="padding:12px 0;border-bottom:1px solid ${COR.borda};">
+          <div style="color:${COR.texto};font-size:13.5px;font-weight:700;margin-bottom:4px;">${t.titulo}</div>
+          <div>
+            ${badge(t.prioridadeLabel, COR.texto, "#f4f4f5")}
+            <span style="color:${COR.destaque};font-size:12px;font-weight:700;margin-left:8px;">Prazo: ${formatarPrazo(t.prazo)}</span>
+          </div>
+        </td>
+      </tr>`,
+    )
     .join("");
 
-  return `
-    <p>Você tem ${tarefas.length} demanda(s) com o prazo vencido:</p>
-    <ul>${itens}</ul>
-    <p><a href="${appUrl()}">Abrir Gestão de Demandas</a></p>
+  const body = `
+    <h1 style="margin:0 0 16px;color:${COR.texto};font-size:19px;font-weight:800;">
+      Você tem ${tarefas.length} demanda${plural ? "s" : ""} com o prazo vencido
+    </h1>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${linhas}</table>
+    ${botao(appUrl(), "Ver demandas atrasadas")}
   `;
+  return emailShell(
+    `${tarefas.length} demanda${plural ? "s" : ""} com prazo vencido`,
+    "Prazos vencidos",
+    body,
+  );
 }
 
 function formatarPrazo(prazo: string) {

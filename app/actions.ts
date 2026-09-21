@@ -4,8 +4,14 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { emailMudancaStatus, enviarEmail } from "@/lib/email";
 import { createClient } from "@/lib/supabase/server";
-import { STATUS_LABEL, type Prioridade, type Status } from "@/lib/types";
+import { PRIORIDADE_LABEL, STATUS_LABEL, type Prioridade, type Status } from "@/lib/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
+
+function formatarPrazo(prazo: string | null) {
+  if (!prazo) return "Sem prazo";
+  const [ano, mes, dia] = prazo.split("-");
+  return `${dia}/${mes}/${ano}`;
+}
 
 async function requireUser() {
   const supabase = await createClient();
@@ -16,19 +22,23 @@ async function requireUser() {
   return { supabase, user };
 }
 
-async function notificarOutroUsuario(
+async function notificarSeRelacionado(
   supabase: SupabaseClient,
-  exceto: string,
+  ator: string,
+  tarefa: { responsavel_id: string; criado_por: string },
   subject: string,
   html: string,
 ) {
   const { data: outro } = await supabase
     .from("profiles")
-    .select("email")
-    .neq("id", exceto)
+    .select("id, email")
+    .neq("id", ator)
     .maybeSingle();
 
-  if (outro?.email) {
+  const relacionado =
+    outro && (outro.id === tarefa.responsavel_id || outro.id === tarefa.criado_por);
+
+  if (relacionado && outro.email) {
     await enviarEmail(outro.email, subject, html);
   }
 }
@@ -90,7 +100,9 @@ export async function atualizarStatus(id: string, status: Status) {
     .from("tasks")
     .update({ status })
     .eq("id", id)
-    .select("titulo")
+    .select(
+      "titulo, prioridade, prazo, responsavel_id, criado_por, responsavel:profiles!tasks_responsavel_id_fkey(nome)",
+    )
     .single();
 
   if (error) throw new Error(error.message);
@@ -102,14 +114,22 @@ export async function atualizarStatus(id: string, status: Status) {
     .eq("id", user.id)
     .single();
 
-  await notificarOutroUsuario(
+  const responsavel = Array.isArray(tarefa.responsavel)
+    ? tarefa.responsavel[0]
+    : tarefa.responsavel;
+
+  await notificarSeRelacionado(
     supabase,
     user.id,
+    tarefa,
     `Demanda atualizada: ${tarefa.titulo}`,
     emailMudancaStatus({
       titulo: tarefa.titulo,
       statusLabel: STATUS_LABEL[status],
       autorNome: autor?.nome ?? "Alguém",
+      responsavelNome: responsavel?.nome ?? "-",
+      prioridadeLabel: PRIORIDADE_LABEL[tarefa.prioridade as Prioridade],
+      prazoTexto: formatarPrazo(tarefa.prazo),
     }),
   );
 }

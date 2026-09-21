@@ -26,7 +26,7 @@ export default function TaskApp({
   const [filtroStatus, setFiltroStatus] = useState<FiltroStatus>("todas");
   const [filtroResponsavel, setFiltroResponsavel] = useState("todos");
   const [somenteAtrasadas, setSomenteAtrasadas] = useState(false);
-  const [visao, setVisao] = useState<Visao>("lista");
+  const [visao, setVisao] = useState<Visao>("quadro");
 
   const hoje = new Date().toISOString().slice(0, 10);
   const currentUser = profiles.find((p) => p.id === currentUserId);

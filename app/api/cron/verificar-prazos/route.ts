@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { hojeBrasil } from "@/lib/date";
 import { emailDemandasAtrasadas, enviarEmail } from "@/lib/email";
 import { PRIORIDADE_LABEL, type Prioridade } from "@/lib/types";
 
@@ -14,7 +15,7 @@ export async function GET(request: Request) {
     process.env.SUPABASE_SECRET_KEY!,
   );
 
-  const hoje = new Date().toISOString().slice(0, 10);
+  const hoje = hojeBrasil();
 
   const { data: atrasadas, error } = await supabase
     .from("tasks")

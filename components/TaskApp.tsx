@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { hojeBrasil } from "@/lib/date";
 import { ehAtrasada } from "@/lib/taskDisplay";
 import { STATUS_LABEL, type Profile, type Status, type TaskComResponsavel } from "@/lib/types";
 import AppHeader from "./AppHeader";
@@ -28,7 +29,7 @@ export default function TaskApp({
   const [somenteAtrasadas, setSomenteAtrasadas] = useState(false);
   const [visao, setVisao] = useState<Visao>("quadro");
 
-  const hoje = new Date().toISOString().slice(0, 10);
+  const hoje = hojeBrasil();
   const currentUser = profiles.find((p) => p.id === currentUserId);
 
   const tasks = useMemo(() => {

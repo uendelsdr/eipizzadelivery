@@ -24,8 +24,9 @@ Delivery.
 1. No painel do Supabase, abra **SQL Editor > New query**.
 2. Cole todo o conteúdo do arquivo [`supabase/schema.sql`](./supabase/schema.sql) e clique em **Run**.
    (Se o banco já existia antes das demandas terem número/descrição e da aba de
-   solicitações, rode também [`migration_002`](./supabase/migration_002_numero_descricao_solicitacoes.sql)
-   e [`migration_003`](./supabase/migration_003_comentarios_solicitacao.sql), nessa ordem.)
+   solicitações, rode também, nessa ordem: [`migration_002`](./supabase/migration_002_numero_descricao_solicitacoes.sql),
+   [`migration_003`](./supabase/migration_003_comentarios_solicitacao.sql) e
+   [`migration_004`](./supabase/migration_004_anexos_solicitacao.sql).)
 
 ### 1.3. Criar os 2 usuários (você e o diretor operacional)
 
@@ -126,6 +127,10 @@ mudança ou outro tipo que precisam de aprovação:
   algo, pedir mais detalhes, responder) — fica registrado como uma conversa.
 - O outro usuário recebe um e-mail quando uma nova solicitação precisa de decisão,
   quando alguém deixa uma mensagem, e quando ela é aprovada ou rejeitada.
+- Dá pra anexar documentos/imagens à solicitação (na criação ou depois, enquanto
+  estiver pendente) para ajudar na análise. Os arquivos ficam guardados no Supabase
+  Storage e são **apagados automaticamente assim que a solicitação é decidida**
+  (aprovada ou rejeitada), para não acumular espaço de armazenamento à toa.
 
 ## 5. Estrutura do projeto
 

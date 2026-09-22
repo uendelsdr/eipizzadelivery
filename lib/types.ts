@@ -56,10 +56,24 @@ export type ComentarioComAutor = SolicitacaoComentario & {
   autor: Profile | null;
 };
 
+export type SolicitacaoAnexo = {
+  id: string;
+  solicitacao_id: string;
+  nome_arquivo: string;
+  caminho: string;
+  tamanho: number | null;
+  tipo: string | null;
+  enviado_por: string;
+  created_at: string;
+};
+
+export type AnexoComUrl = SolicitacaoAnexo & { url: string | null };
+
 export type SolicitacaoComPerfis = Solicitacao & {
   solicitante: Profile | null;
   decisor: Profile | null;
   comentarios: ComentarioComAutor[];
+  anexos: AnexoComUrl[];
 };
 
 export const PRIORIDADE_LABEL: Record<Prioridade, string> = {

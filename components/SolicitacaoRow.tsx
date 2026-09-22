@@ -1,13 +1,16 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import {
+  anexarArquivos,
   decidirSolicitacao,
   enviarComentario,
+  excluirAnexo,
   excluirSolicitacao,
 } from "@/app/solicitacoes/actions";
 import {
   formatarDataHora,
+  formatarTamanho,
   formatarValor,
   STATUS_SOLICITACAO_STYLE,
   TIPO_SOLICITACAO_STYLE,
@@ -31,12 +34,25 @@ export default function SolicitacaoRow({
   const [decidindo, setDecidindo] = useState<"aprovada" | "rejeitada" | null>(null);
   const [comentario, setComentario] = useState("");
   const [mensagem, setMensagem] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const st = STATUS_SOLICITACAO_STYLE[solicitacao.status];
   const tp = TIPO_SOLICITACAO_STYLE[solicitacao.tipo];
   const podeDecidir = solicitacao.status === "pendente" && souAprovador;
   const ehSolicitante = solicitacao.solicitante_id === currentUserId;
   const podeConversar = solicitacao.status === "pendente" && (souAprovador || ehSolicitante);
+  const podeAnexar = solicitacao.status === "pendente" && (souAprovador || ehSolicitante);
+
+  function handleArquivosSelecionados(e: React.ChangeEvent<HTMLInputElement>) {
+    const arquivos = e.target.files;
+    if (!arquivos || arquivos.length === 0) return;
+    const formData = new FormData();
+    Array.from(arquivos).forEach((f) => formData.append("arquivos", f));
+    startTransition(async () => {
+      await anexarArquivos(solicitacao.id, formData);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    });
+  }
 
   function confirmarDecisao() {
     if (!decidindo) return;
@@ -135,6 +151,71 @@ export default function SolicitacaoRow({
           </button>
         )}
       </div>
+
+      {(solicitacao.anexos.length > 0 || podeAnexar) && (
+        <div
+          className="flex flex-col gap-2 border-t pt-3"
+          style={{ borderColor: "var(--border-subtle)" }}
+        >
+          {solicitacao.anexos.map((anexo) => (
+            <div key={anexo.id} className="flex items-center gap-2 text-sm">
+              <span aria-hidden>📎</span>
+              {anexo.url ? (
+                <a
+                  href={anexo.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="truncate underline"
+                  style={{ color: "var(--foreground)" }}
+                >
+                  {anexo.nome_arquivo}
+                </a>
+              ) : (
+                <span style={{ color: "var(--text-secondary)" }}>{anexo.nome_arquivo}</span>
+              )}
+              <span className="font-mono text-[10.5px]" style={{ color: "var(--text-muted)" }}>
+                {formatarTamanho(anexo.tamanho)}
+              </span>
+              {anexo.enviado_por === currentUserId && solicitacao.status === "pendente" && (
+                <button
+                  onClick={() => {
+                    if (confirm("Remover este anexo?")) {
+                      startTransition(async () => {
+                        await excluirAnexo(anexo.id);
+                      });
+                    }
+                  }}
+                  className="ml-auto cursor-pointer text-xs font-semibold"
+                  style={{ color: "#f2776d" }}
+                >
+                  Remover
+                </button>
+              )}
+            </div>
+          ))}
+
+          {podeAnexar && (
+            <div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+                onChange={handleArquivosSelecionados}
+                className="hidden"
+                id={`anexo-input-${solicitacao.id}`}
+              />
+              <label
+                htmlFor={`anexo-input-${solicitacao.id}`}
+                className="inline-block cursor-pointer text-xs font-semibold"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                📎 Anexar arquivo
+              </label>
+            </div>
+          )}
+        </div>
+      )}
 
       {solicitacao.comentarios.length > 0 && (
         <div

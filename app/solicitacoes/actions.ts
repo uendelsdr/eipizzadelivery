@@ -10,6 +10,9 @@ import {
 import { APPROVER_EMAIL } from "@/lib/approver";
 import { createClient } from "@/lib/supabase/server";
 import { TIPO_SOLICITACAO_LABEL, type TipoSolicitacao } from "@/lib/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+const BUCKET_ANEXOS = "solicitacoes-anexos";
 
 async function requireUser() {
   const supabase = await createClient();
@@ -18,6 +21,45 @@ async function requireUser() {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Não autenticado");
   return { supabase, user };
+}
+
+async function limparAnexos(supabase: SupabaseClient, solicitacaoId: string) {
+  const { data: anexos } = await supabase
+    .from("solicitacao_anexos")
+    .select("caminho")
+    .eq("solicitacao_id", solicitacaoId);
+
+  if (!anexos || anexos.length === 0) return;
+
+  await supabase.storage.from(BUCKET_ANEXOS).remove(anexos.map((a) => a.caminho));
+  await supabase.from("solicitacao_anexos").delete().eq("solicitacao_id", solicitacaoId);
+}
+
+async function uploadAnexos(
+  supabase: SupabaseClient,
+  solicitacaoId: string,
+  userId: string,
+  arquivos: FormDataEntryValue[],
+) {
+  for (const arquivo of arquivos) {
+    if (!(arquivo instanceof File) || arquivo.size === 0) continue;
+
+    const caminho = `${solicitacaoId}/${Date.now()}-${arquivo.name}`;
+    const { error: uploadError } = await supabase.storage
+      .from(BUCKET_ANEXOS)
+      .upload(caminho, arquivo);
+    if (uploadError) throw new Error(uploadError.message);
+
+    const { error: dbError } = await supabase.from("solicitacao_anexos").insert({
+      solicitacao_id: solicitacaoId,
+      nome_arquivo: arquivo.name,
+      caminho,
+      tamanho: arquivo.size,
+      tipo: arquivo.type || null,
+      enviado_por: userId,
+    });
+    if (dbError) throw new Error(dbError.message);
+  }
 }
 
 export async function criarSolicitacao(formData: FormData) {
@@ -34,10 +76,12 @@ export async function criarSolicitacao(formData: FormData) {
   const { data: solicitacao, error } = await supabase
     .from("solicitacoes")
     .insert({ titulo, tipo, descricao, valor, solicitante_id: user.id })
-    .select("numero")
+    .select("id, numero")
     .single();
 
   if (error) throw new Error(error.message);
+
+  await uploadAnexos(supabase, solicitacao.id, user.id, formData.getAll("arquivos"));
   revalidatePath("/solicitacoes");
 
   const [{ data: autor }, { data: outro }] = await Promise.all([
@@ -96,6 +140,8 @@ export async function decidirSolicitacao(
     .eq("id", id);
 
   if (error) throw new Error(error.message);
+
+  await limparAnexos(supabase, id);
   revalidatePath("/solicitacoes");
 
   const [{ data: decisor }, { data: solicitante }] = await Promise.all([
@@ -158,6 +204,36 @@ export async function enviarComentario(solicitacaoId: string, mensagem: string) 
       }),
     );
   }
+}
+
+export async function anexarArquivos(solicitacaoId: string, formData: FormData) {
+  const { supabase, user } = await requireUser();
+  const arquivos = formData.getAll("arquivos");
+  if (arquivos.length === 0) return;
+
+  await uploadAnexos(supabase, solicitacaoId, user.id, arquivos);
+  revalidatePath("/solicitacoes");
+}
+
+export async function excluirAnexo(anexoId: string) {
+  const { supabase, user } = await requireUser();
+
+  const { data: anexo, error: fetchError } = await supabase
+    .from("solicitacao_anexos")
+    .select("caminho, enviado_por")
+    .eq("id", anexoId)
+    .single();
+
+  if (fetchError) throw new Error(fetchError.message);
+  if (anexo.enviado_por !== user.id) {
+    throw new Error("Só quem enviou o anexo pode removê-lo");
+  }
+
+  await supabase.storage.from(BUCKET_ANEXOS).remove([anexo.caminho]);
+
+  const { error } = await supabase.from("solicitacao_anexos").delete().eq("id", anexoId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/solicitacoes");
 }
 
 export async function excluirSolicitacao(id: string) {

@@ -116,6 +116,18 @@ export default function SolicitacaoForm({ onClose }: { onClose: () => void }) {
               />
             </label>
           )}
+
+          <label className={labelClass} style={{ color: "var(--text-tertiary)" }}>
+            Anexos (opcional)
+            <input
+              name="arquivos"
+              type="file"
+              multiple
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+              className="cursor-pointer rounded-lg px-3.5 py-2.5 text-sm font-normal text-white normal-case outline-none file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-[var(--accent)] file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-white"
+              style={inputStyle}
+            />
+          </label>
         </form>
 
         <div

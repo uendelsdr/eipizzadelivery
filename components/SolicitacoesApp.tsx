@@ -1,7 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { STATUS_SOLICITACAO_LABEL, type Profile, type SolicitacaoComPerfis, type StatusSolicitacao } from "@/lib/types";
+import {
+  STATUS_SOLICITACAO_LABEL,
+  type Profile,
+  type SolicitacaoComPerfis,
+  type StatusSolicitacao,
+  type Unidade,
+} from "@/lib/types";
 import AppHeader from "./AppHeader";
 import SolicitacaoForm from "./SolicitacaoForm";
 import SolicitacaoRow from "./SolicitacaoRow";
@@ -11,30 +17,35 @@ type FiltroStatus = "todas" | StatusSolicitacao;
 export default function SolicitacoesApp({
   initialSolicitacoes,
   profiles,
+  unidades,
   currentUserId,
   souAprovador,
 }: {
   initialSolicitacoes: SolicitacaoComPerfis[];
   profiles: Profile[];
+  unidades: Unidade[];
   currentUserId: string;
   souAprovador: boolean;
 }) {
   const [showForm, setShowForm] = useState(false);
   const [filtroStatus, setFiltroStatus] = useState<FiltroStatus>("todas");
+  const [filtroUnidade, setFiltroUnidade] = useState("todas");
 
   const pendentesParaMim = souAprovador
     ? initialSolicitacoes.filter((s) => s.status === "pendente").length
     : 0;
 
   const solicitacoes = useMemo(() => {
-    return initialSolicitacoes.filter(
-      (s) => filtroStatus === "todas" || s.status === filtroStatus,
-    );
-  }, [initialSolicitacoes, filtroStatus]);
+    return initialSolicitacoes.filter((s) => {
+      if (filtroStatus !== "todas" && s.status !== filtroStatus) return false;
+      if (filtroUnidade !== "todas" && s.unidade_id !== filtroUnidade) return false;
+      return true;
+    });
+  }, [initialSolicitacoes, filtroStatus, filtroUnidade]);
 
   return (
     <div className="min-h-screen pb-20">
-      <AppHeader profiles={profiles} currentUserId={currentUserId} />
+      <AppHeader profiles={profiles} currentUserId={currentUserId} souAprovador={souAprovador} />
 
       <main className="mx-auto max-w-[1220px] px-5 pt-7 sm:px-7">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-6">
@@ -72,6 +83,20 @@ export default function SolicitacoesApp({
               <option key={value} value={value} style={{ background: "#1a1817" }}>{label}</option>
             ))}
           </select>
+
+          {unidades.length > 0 && (
+            <select
+              value={filtroUnidade}
+              onChange={(e) => setFiltroUnidade(e.target.value)}
+              className="cursor-pointer rounded-[10px] px-3.5 py-2.5 text-[13.5px] text-white outline-none"
+              style={{ border: "1px solid var(--border-medium)", background: "rgba(0,0,0,.35)" }}
+            >
+              <option value="todas" style={{ background: "#1a1817" }}>Todas as unidades</option>
+              {unidades.map((u) => (
+                <option key={u.id} value={u.id} style={{ background: "#1a1817" }}>{u.nome}</option>
+              ))}
+            </select>
+          )}
         </div>
 
         {solicitacoes.length === 0 ? (
@@ -83,7 +108,7 @@ export default function SolicitacoesApp({
               Nenhuma solicitação com esses filtros
             </p>
             <p className="text-[13px]" style={{ color: "var(--text-tertiary)" }}>
-              Crie uma nova solicitação de mudança ou compra para o outro aprovar.
+              Crie uma nova solicitação de mudança ou compra para aprovação.
             </p>
           </div>
         ) : (
@@ -100,7 +125,7 @@ export default function SolicitacoesApp({
         )}
       </main>
 
-      {showForm && <SolicitacaoForm onClose={() => setShowForm(false)} />}
+      {showForm && <SolicitacaoForm unidades={unidades} onClose={() => setShowForm(false)} />}
     </div>
   );
 }

@@ -119,13 +119,25 @@ configurada, os envios são simplesmente ignorados — nada quebra.
 Além das demandas, existe uma segunda aba (**Solicitações**) para pedidos de compra,
 mudança ou outro tipo que precisam de aprovação:
 
-- Qualquer um dos dois cria uma solicitação (tipo, título, descrição e, se for
-  compra, um valor estimado).
-- Só o **aprovador** (por padrão, `uendelsdr@gmail.com` — configurável pela
-  variável `APPROVER_EMAIL`) pode aprovar ou rejeitar, com um comentário opcional.
+- Qualquer usuário cria uma solicitação (tipo, título, descrição, unidade e, se
+  for compra, um valor estimado).
+- Só os **aprovadores** podem aprovar ou rejeitar, com um comentário opcional.
+  Por padrão, `uendelsdr@gmail.com` e `kaua.eipizza@gmail.com` são aprovadores —
+  isso é marcado na coluna `eh_aprovador` da tabela `profiles`. Para promover
+  alguém a aprovador no futuro, basta rodar no SQL Editor:
+  `update public.profiles set eh_aprovador = true where email = 'novo@email.com';`
+- **Visibilidade**: cada solicitação só aparece para quem a criou e para os
+  aprovadores. Isso importa quando outros responsáveis de setor forem cadastrados
+  no futuro — cada um só verá as próprias solicitações, enquanto os aprovadores
+  continuam vendo todas.
+- **Acesso**: quem não é aprovador só enxerga a aba **Solicitações** — a aba
+  Demandas fica reservada aos aprovadores (o link some do menu e o acesso direto
+  pela URL redireciona automaticamente). Para dar acesso ao app a um responsável
+  de setor, crie o usuário normalmente em **Authentication > Users** (ele nasce
+  sem `eh_aprovador`, então só vê e cria as próprias solicitações).
 - Antes de decidir, dá pra trocar mensagens na própria solicitação (perguntar
   algo, pedir mais detalhes, responder) — fica registrado como uma conversa.
-- O outro usuário recebe um e-mail quando uma nova solicitação precisa de decisão,
+- Os envolvidos recebem um e-mail quando uma nova solicitação precisa de decisão,
   quando alguém deixa uma mensagem, e quando ela é aprovada ou rejeitada.
 - Dá pra anexar documentos/imagens à solicitação (na criação ou depois, enquanto
   estiver pendente) para ajudar na análise. Os arquivos ficam guardados no Supabase

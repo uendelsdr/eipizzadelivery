@@ -16,10 +16,12 @@ export default function TaskApp({
   initialTasks,
   profiles,
   currentUserId,
+  souAprovador,
 }: {
   initialTasks: TaskComResponsavel[];
   profiles: Profile[];
   currentUserId: string;
+  souAprovador: boolean;
 }) {
   const [showForm, setShowForm] = useState(false);
   const [editando, setEditando] = useState<TaskComResponsavel | null>(null);
@@ -103,7 +105,7 @@ export default function TaskApp({
 
   return (
     <div className="min-h-screen pb-20">
-      <AppHeader profiles={profiles} currentUserId={currentUserId} />
+      <AppHeader profiles={profiles} currentUserId={currentUserId} souAprovador={souAprovador} />
 
       <main className="mx-auto max-w-[1220px] px-5 pt-7 sm:px-7">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-6">

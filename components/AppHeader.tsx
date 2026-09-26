@@ -7,21 +7,23 @@ import { sair } from "@/app/actions";
 import type { Profile } from "@/lib/types";
 import { OkeiIcon } from "./OkeiMark";
 
-const ABAS = [
-  { href: "/", label: "Demandas" },
-  { href: "/solicitacoes", label: "Solicitações" },
-];
-
 export default function AppHeader({
   profiles,
   currentUserId,
+  souAprovador,
 }: {
   profiles: Profile[];
   currentUserId: string;
+  souAprovador: boolean;
 }) {
   const pathname = usePathname();
   const [, startTransition] = useTransition();
   const currentUser = profiles.find((p) => p.id === currentUserId);
+
+  const abas = [
+    ...(souAprovador ? [{ href: "/", label: "Demandas" }] : []),
+    { href: "/solicitacoes", label: "Solicitações" },
+  ];
 
   return (
     <header
@@ -44,7 +46,7 @@ export default function AppHeader({
         </div>
 
         <nav className="ml-2 flex gap-1">
-          {ABAS.map((aba) => {
+          {abas.map((aba) => {
             const ativo = pathname === aba.href;
             return (
               <Link

@@ -5,7 +5,8 @@
 create table if not exists public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   nome text not null,
-  email text not null
+  email text not null,
+  eh_aprovador boolean not null default false
 );
 
 alter table public.profiles enable row level security;
@@ -41,6 +42,10 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
+
+-- Marca os aprovadores iniciais (só eles decidem solicitações e veem todas)
+update public.profiles set eh_aprovador = true
+where email in ('uendelsdr@gmail.com', 'kaua.eipizza@gmail.com');
 
 -- 2. Tabela de tarefas / demandas
 create table if not exists public.tasks (
@@ -102,7 +107,26 @@ create index if not exists tasks_prazo_idx on public.tasks (prazo);
 create index if not exists tasks_status_idx on public.tasks (status);
 create index if not exists tasks_responsavel_idx on public.tasks (responsavel_id);
 
--- 3. Tabela de solicitacoes (aprovacao de mudancas/compras)
+-- 3. Unidades (lojas/filiais)
+create table if not exists public.unidades (
+  id uuid primary key default gen_random_uuid(),
+  nome text not null unique,
+  created_at timestamptz not null default now()
+);
+
+alter table public.unidades enable row level security;
+
+create policy "Usuarios autenticados podem ver as unidades"
+  on public.unidades for select
+  to authenticated
+  using (true);
+
+insert into public.unidades (nome) values
+  ('Periperi'),
+  ('Pernambués')
+on conflict (nome) do nothing;
+
+-- 4. Tabela de solicitacoes (aprovacao de mudancas/compras)
 create table if not exists public.solicitacoes (
   id uuid primary key default gen_random_uuid(),
   numero bigint generated always as identity,
@@ -110,6 +134,7 @@ create table if not exists public.solicitacoes (
   tipo text not null default 'outro' check (tipo in ('compra', 'mudanca', 'outro')),
   descricao text,
   valor numeric(10,2),
+  unidade_id uuid references public.unidades (id),
   solicitante_id uuid not null references public.profiles (id),
   status text not null default 'pendente' check (status in ('pendente', 'aprovada', 'rejeitada')),
   decidido_por uuid references public.profiles (id),
@@ -120,29 +145,40 @@ create table if not exists public.solicitacoes (
 
 alter table public.solicitacoes enable row level security;
 
-create policy "Usuarios autenticados podem ver todas as solicitacoes"
+-- Cada solicitacao so aparece para quem a criou ou para um aprovador
+-- (importante quando outros responsaveis de setor forem cadastrados)
+create policy "Ver proprias solicitacoes ou como aprovador"
   on public.solicitacoes for select
   to authenticated
-  using (true);
+  using (
+    solicitante_id = auth.uid()
+    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.eh_aprovador)
+  );
 
 create policy "Usuarios autenticados podem criar solicitacoes"
   on public.solicitacoes for insert
   to authenticated
   with check (true);
 
-create policy "Usuarios autenticados podem atualizar solicitacoes"
+create policy "Atualizar proprias solicitacoes ou como aprovador"
   on public.solicitacoes for update
   to authenticated
-  using (true);
+  using (
+    solicitante_id = auth.uid()
+    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.eh_aprovador)
+  );
 
-create policy "Usuarios autenticados podem excluir solicitacoes"
+create policy "Excluir proprias solicitacoes ou como aprovador"
   on public.solicitacoes for delete
   to authenticated
-  using (true);
+  using (
+    solicitante_id = auth.uid()
+    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.eh_aprovador)
+  );
 
 create index if not exists solicitacoes_status_idx on public.solicitacoes (status);
 
--- 4. Comentarios (perguntas/respostas) nas solicitacoes, antes da decisao
+-- 5. Comentarios (perguntas/respostas) nas solicitacoes, antes da decisao
 create table if not exists public.solicitacao_comentarios (
   id uuid primary key default gen_random_uuid(),
   solicitacao_id uuid not null references public.solicitacoes (id) on delete cascade,
@@ -153,10 +189,19 @@ create table if not exists public.solicitacao_comentarios (
 
 alter table public.solicitacao_comentarios enable row level security;
 
-create policy "Usuarios autenticados podem ver todos os comentarios"
+create policy "Ver comentarios de solicitacoes visiveis"
   on public.solicitacao_comentarios for select
   to authenticated
-  using (true);
+  using (
+    exists (
+      select 1 from public.solicitacoes s
+      where s.id = solicitacao_comentarios.solicitacao_id
+        and (
+          s.solicitante_id = auth.uid()
+          or exists (select 1 from public.profiles p where p.id = auth.uid() and p.eh_aprovador)
+        )
+    )
+  );
 
 create policy "Usuarios autenticados podem criar comentarios"
   on public.solicitacao_comentarios for insert
@@ -166,7 +211,7 @@ create policy "Usuarios autenticados podem criar comentarios"
 create index if not exists solicitacao_comentarios_solicitacao_idx
   on public.solicitacao_comentarios (solicitacao_id);
 
--- 5. Anexos (documentos/imagens) nas solicitacoes
+-- 6. Anexos (documentos/imagens) nas solicitacoes
 insert into storage.buckets (id, name, public)
 values ('solicitacoes-anexos', 'solicitacoes-anexos', false)
 on conflict (id) do nothing;
@@ -199,20 +244,32 @@ create table if not exists public.solicitacao_anexos (
 
 alter table public.solicitacao_anexos enable row level security;
 
-create policy "Usuarios autenticados podem ver todos os anexos"
+create policy "Ver anexos de solicitacoes visiveis"
   on public.solicitacao_anexos for select
   to authenticated
-  using (true);
+  using (
+    exists (
+      select 1 from public.solicitacoes s
+      where s.id = solicitacao_anexos.solicitacao_id
+        and (
+          s.solicitante_id = auth.uid()
+          or exists (select 1 from public.profiles p where p.id = auth.uid() and p.eh_aprovador)
+        )
+    )
+  );
 
 create policy "Usuarios autenticados podem criar anexos"
   on public.solicitacao_anexos for insert
   to authenticated
   with check (true);
 
-create policy "Usuarios autenticados podem excluir anexos"
+create policy "Excluir proprios anexos ou como aprovador"
   on public.solicitacao_anexos for delete
   to authenticated
-  using (true);
+  using (
+    enviado_por = auth.uid()
+    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.eh_aprovador)
+  );
 
 create index if not exists solicitacao_anexos_solicitacao_idx
   on public.solicitacao_anexos (solicitacao_id);

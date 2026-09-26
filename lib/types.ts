@@ -7,6 +7,13 @@ export type Profile = {
   id: string;
   nome: string;
   email: string;
+  eh_aprovador: boolean;
+};
+
+export type Unidade = {
+  id: string;
+  nome: string;
+  created_at: string;
 };
 
 export type Task = {
@@ -36,6 +43,7 @@ export type Solicitacao = {
   tipo: TipoSolicitacao;
   descricao: string | null;
   valor: number | null;
+  unidade_id: string | null;
   solicitante_id: string;
   status: StatusSolicitacao;
   decidido_por: string | null;
@@ -72,6 +80,7 @@ export type AnexoComUrl = SolicitacaoAnexo & { url: string | null };
 export type SolicitacaoComPerfis = Solicitacao & {
   solicitante: Profile | null;
   decisor: Profile | null;
+  unidade: Unidade | null;
   comentarios: ComentarioComAutor[];
   anexos: AnexoComUrl[];
 };

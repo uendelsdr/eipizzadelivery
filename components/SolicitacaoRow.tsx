@@ -118,6 +118,7 @@ export default function SolicitacaoRow({
             {solicitacao.valor != null && (
               <span style={{ color: "var(--foreground)" }}>{formatarValor(solicitacao.valor)}</span>
             )}
+            {solicitacao.unidade && <span>📍 {solicitacao.unidade.nome}</span>}
             <span>solicitado por {solicitacao.solicitante?.nome ?? "-"}</span>
             <span>{formatarDataHora(solicitacao.created_at)}</span>
           </div>

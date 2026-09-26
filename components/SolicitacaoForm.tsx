@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { criarSolicitacao } from "@/app/solicitacoes/actions";
 import { TIPO_SOLICITACAO_STYLE } from "@/lib/solicitacaoDisplay";
-import { TIPO_SOLICITACAO_LABEL, type TipoSolicitacao } from "@/lib/types";
+import { TIPO_SOLICITACAO_LABEL, type TipoSolicitacao, type Unidade } from "@/lib/types";
 
 const inputStyle = {
   border: "1px solid var(--border-medium)",
@@ -13,7 +13,13 @@ const inputStyle = {
 
 const labelClass = "flex flex-col gap-1.5 text-[11px] font-bold tracking-wide uppercase";
 
-export default function SolicitacaoForm({ onClose }: { onClose: () => void }) {
+export default function SolicitacaoForm({
+  unidades,
+  onClose,
+}: {
+  unidades: Unidade[];
+  onClose: () => void;
+}) {
   const [isPending, startTransition] = useTransition();
   const [tipo, setTipo] = useState<TipoSolicitacao>("outro");
 
@@ -90,6 +96,27 @@ export default function SolicitacaoForm({ onClose }: { onClose: () => void }) {
               style={inputStyle}
             />
           </label>
+
+          {unidades.length > 0 && (
+            <label className={labelClass} style={{ color: "var(--text-tertiary)" }}>
+              Unidade
+              <select
+                name="unidade_id"
+                defaultValue=""
+                className="cursor-pointer rounded-lg px-3.5 py-3 text-sm font-normal text-white normal-case outline-none"
+                style={inputStyle}
+              >
+                <option value="" style={{ background: "#1a1817" }}>
+                  Selecione…
+                </option>
+                {unidades.map((u) => (
+                  <option key={u.id} value={u.id} style={{ background: "#1a1817" }}>
+                    {u.nome}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
 
           <label className={labelClass} style={{ color: "var(--text-tertiary)" }}>
             Descrição

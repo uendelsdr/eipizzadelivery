@@ -7,7 +7,6 @@ import {
   emailNovaSolicitacao,
   enviarEmail,
 } from "@/lib/email";
-import { APPROVER_EMAIL } from "@/lib/approver";
 import { createClient } from "@/lib/supabase/server";
 import { TIPO_SOLICITACAO_LABEL, type TipoSolicitacao } from "@/lib/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -21,6 +20,24 @@ async function requireUser() {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Não autenticado");
   return { supabase, user };
+}
+
+async function souAprovador(supabase: SupabaseClient, userId: string) {
+  const { data } = await supabase
+    .from("profiles")
+    .select("eh_aprovador")
+    .eq("id", userId)
+    .single();
+  return !!data?.eh_aprovador;
+}
+
+async function getAprovadores(supabase: SupabaseClient, excetoUserId: string) {
+  const { data } = await supabase
+    .from("profiles")
+    .select("id, nome, email")
+    .eq("eh_aprovador", true)
+    .neq("id", excetoUserId);
+  return data ?? [];
 }
 
 async function limparAnexos(supabase: SupabaseClient, solicitacaoId: string) {
@@ -72,10 +89,11 @@ export async function criarSolicitacao(formData: FormData) {
   const descricao = String(formData.get("descricao") || "").trim() || null;
   const valorRaw = String(formData.get("valor") || "").trim();
   const valor = tipo === "compra" && valorRaw ? Number(valorRaw.replace(",", ".")) : null;
+  const unidadeId = String(formData.get("unidade_id") || "").trim() || null;
 
   const { data: solicitacao, error } = await supabase
     .from("solicitacoes")
-    .insert({ titulo, tipo, descricao, valor, solicitante_id: user.id })
+    .insert({ titulo, tipo, descricao, valor, unidade_id: unidadeId, solicitante_id: user.id })
     .select("id, numero")
     .single();
 
@@ -84,14 +102,15 @@ export async function criarSolicitacao(formData: FormData) {
   await uploadAnexos(supabase, solicitacao.id, user.id, formData.getAll("arquivos"));
   revalidatePath("/solicitacoes");
 
-  const [{ data: autor }, { data: outro }] = await Promise.all([
+  const [{ data: autor }, aprovadores] = await Promise.all([
     supabase.from("profiles").select("nome").eq("id", user.id).single(),
-    supabase.from("profiles").select("email").neq("id", user.id).maybeSingle(),
+    getAprovadores(supabase, user.id),
   ]);
 
-  if (outro?.email) {
+  for (const aprovador of aprovadores) {
+    if (!aprovador.email) continue;
     await enviarEmail(
-      outro.email,
+      aprovador.email,
       `Nova solicitação para aprovar: ${titulo}`,
       emailNovaSolicitacao({
         numero: solicitacao.numero,
@@ -112,8 +131,8 @@ export async function decidirSolicitacao(
 ) {
   const { supabase, user } = await requireUser();
 
-  if (user.email !== APPROVER_EMAIL) {
-    throw new Error("Somente o aprovador pode decidir sobre solicitações");
+  if (!(await souAprovador(supabase, user.id))) {
+    throw new Error("Somente um aprovador pode decidir sobre solicitações");
   }
 
   const { data: solicitacao, error: fetchError } = await supabase
@@ -172,7 +191,7 @@ export async function enviarComentario(solicitacaoId: string, mensagem: string) 
 
   const { data: solicitacao, error: fetchError } = await supabase
     .from("solicitacoes")
-    .select("titulo, numero")
+    .select("titulo, numero, solicitante_id")
     .eq("id", solicitacaoId)
     .single();
 
@@ -187,14 +206,23 @@ export async function enviarComentario(solicitacaoId: string, mensagem: string) 
   if (error) throw new Error(error.message);
   revalidatePath("/solicitacoes");
 
-  const [{ data: autor }, { data: outro }] = await Promise.all([
+  const [{ data: autor }, aprovadores, { data: solicitante }] = await Promise.all([
     supabase.from("profiles").select("nome").eq("id", user.id).single(),
-    supabase.from("profiles").select("email").neq("id", user.id).maybeSingle(),
+    getAprovadores(supabase, user.id),
+    solicitacao.solicitante_id !== user.id
+      ? supabase.from("profiles").select("id, email").eq("id", solicitacao.solicitante_id).single()
+      : Promise.resolve({ data: null }),
   ]);
 
-  if (outro?.email) {
+  const destinatarios = new Map<string, string>();
+  for (const aprovador of aprovadores) {
+    if (aprovador.email) destinatarios.set(aprovador.id, aprovador.email);
+  }
+  if (solicitante?.email) destinatarios.set(solicitante.id, solicitante.email);
+
+  for (const email of destinatarios.values()) {
     await enviarEmail(
-      outro.email,
+      email,
       `Nova mensagem na solicitação: ${solicitacao.titulo}`,
       emailComentarioSolicitacao({
         numero: solicitacao.numero,

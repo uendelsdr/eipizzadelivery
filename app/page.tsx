@@ -25,11 +25,18 @@ export default async function Home() {
       .order("prazo", { ascending: true, nullsFirst: false }),
   ]);
 
+  const meuPerfil = (profiles ?? []).find((p) => p.id === user.id);
+
+  // A aba de Demandas é exclusiva dos aprovadores; responsáveis de setor
+  // usam apenas a aba de Solicitações.
+  if (!meuPerfil?.eh_aprovador) redirect("/solicitacoes");
+
   return (
     <TaskApp
       initialTasks={(tasks ?? []) as unknown as TaskComResponsavel[]}
       profiles={(profiles ?? []) as Profile[]}
       currentUserId={user.id}
+      souAprovador={meuPerfil.eh_aprovador}
     />
   );
 }

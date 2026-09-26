@@ -46,7 +46,10 @@ export default function TaskRow({
         style={{ background: prio.cor }}
       />
 
-      <div className="flex min-w-[240px] flex-1 flex-col gap-2">
+      <div
+        onClick={() => setEditando(true)}
+        className="flex min-w-[240px] flex-1 cursor-pointer flex-col gap-2"
+      >
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-mono text-[11.5px] font-semibold" style={{ color: "var(--text-muted)" }}>
             Nº {task.numero}

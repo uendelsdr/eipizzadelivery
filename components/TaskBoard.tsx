@@ -87,7 +87,8 @@ function BoardCard({
 
   return (
     <article
-      className="animate-popin flex flex-col gap-2.5 rounded-xl p-4 transition-transform"
+      onClick={onEditar}
+      className="animate-popin flex cursor-pointer flex-col gap-2.5 rounded-xl p-4 transition-transform"
       style={{
         border: "1px solid var(--border-subtle)",
         background: "var(--surface-hover)",
@@ -128,20 +129,24 @@ function BoardCard({
               ? "Só o responsável pela demanda pode iniciá-la ou concluí-la"
               : undefined
           }
-          onClick={() =>
+          onClick={(e) => {
+            e.stopPropagation();
             startTransition(async () => {
               const proximo =
                 task.status === "concluida" ? "pendente" : PROXIMO_STATUS[task.status];
               await atualizarStatus(task.id, proximo);
-            })
-          }
+            });
+          }}
           className="flex-1 cursor-pointer rounded-lg px-2.5 py-2 text-[11.5px] font-bold text-white transition-colors hover:bg-white hover:text-black disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-white"
           style={{ border: "1px solid var(--border-medium)", background: "rgba(255,255,255,.06)" }}
         >
           {AVANCAR_LABEL[task.status]}
         </button>
         <button
-          onClick={onEditar}
+          onClick={(e) => {
+            e.stopPropagation();
+            onEditar();
+          }}
           className="cursor-pointer rounded-lg px-2.5 py-2 text-[11.5px] font-semibold transition-colors hover:text-white"
           style={{ border: "1px solid var(--border-subtle)", color: "var(--text-secondary)" }}
         >

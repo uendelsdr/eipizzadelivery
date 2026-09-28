@@ -28,7 +28,7 @@ export default function SolicitacoesApp({
   souAprovador: boolean;
 }) {
   const [showForm, setShowForm] = useState(false);
-  const [filtroStatus, setFiltroStatus] = useState<FiltroStatus>("todas");
+  const [filtroStatus, setFiltroStatus] = useState<FiltroStatus>("pendente");
   const [filtroUnidade, setFiltroUnidade] = useState("todas");
 
   const aprovadores = useMemo(() => profiles.filter((p) => p.eh_aprovador), [profiles]);
@@ -41,11 +41,17 @@ export default function SolicitacoesApp({
     : 0;
 
   const solicitacoes = useMemo(() => {
-    return initialSolicitacoes.filter((s) => {
-      if (filtroStatus !== "todas" && s.status !== filtroStatus) return false;
-      if (filtroUnidade !== "todas" && s.unidade_id !== filtroUnidade) return false;
-      return true;
-    });
+    return initialSolicitacoes
+      .filter((s) => {
+        if (filtroStatus !== "todas" && s.status !== filtroStatus) return false;
+        if (filtroUnidade !== "todas" && s.unidade_id !== filtroUnidade) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        const pesoA = a.status === "pendente" ? 0 : 1;
+        const pesoB = b.status === "pendente" ? 0 : 1;
+        return pesoA - pesoB;
+      });
   }, [initialSolicitacoes, filtroStatus, filtroUnidade]);
 
   return (

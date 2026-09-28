@@ -58,6 +58,7 @@ export type SolicitacaoComentario = {
   autor_id: string;
   mensagem: string;
   created_at: string;
+  editado_em: string | null;
 };
 
 export type ComentarioComAutor = SolicitacaoComentario & {

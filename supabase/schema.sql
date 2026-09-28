@@ -184,7 +184,8 @@ create table if not exists public.solicitacao_comentarios (
   solicitacao_id uuid not null references public.solicitacoes (id) on delete cascade,
   autor_id uuid not null references public.profiles (id),
   mensagem text not null,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  editado_em timestamptz
 );
 
 alter table public.solicitacao_comentarios enable row level security;
@@ -207,6 +208,11 @@ create policy "Usuarios autenticados podem criar comentarios"
   on public.solicitacao_comentarios for insert
   to authenticated
   with check (true);
+
+create policy "Autor pode editar proprio comentario"
+  on public.solicitacao_comentarios for update
+  to authenticated
+  using (autor_id = auth.uid());
 
 create index if not exists solicitacao_comentarios_solicitacao_idx
   on public.solicitacao_comentarios (solicitacao_id);

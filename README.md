@@ -25,8 +25,10 @@ Delivery.
 2. Cole todo o conteúdo do arquivo [`supabase/schema.sql`](./supabase/schema.sql) e clique em **Run**.
    (Se o banco já existia antes das demandas terem número/descrição e da aba de
    solicitações, rode também, nessa ordem: [`migration_002`](./supabase/migration_002_numero_descricao_solicitacoes.sql),
-   [`migration_003`](./supabase/migration_003_comentarios_solicitacao.sql) e
-   [`migration_004`](./supabase/migration_004_anexos_solicitacao.sql).)
+   [`migration_003`](./supabase/migration_003_comentarios_solicitacao.sql),
+   [`migration_004`](./supabase/migration_004_anexos_solicitacao.sql),
+   [`migration_005`](./supabase/migration_005_aprovadores_e_unidades.sql) e
+   [`migration_006`](./supabase/migration_006_reabrir_e_editar_comentario.sql).)
 
 ### 1.3. Criar os 2 usuários (você e o diretor operacional)
 
@@ -143,6 +145,11 @@ mudança ou outro tipo que precisam de aprovação:
   estiver pendente) para ajudar na análise. Os arquivos ficam guardados no Supabase
   Storage e são **apagados automaticamente assim que a solicitação é decidida**
   (aprovada ou rejeitada), para não acumular espaço de armazenamento à toa.
+- Se for necessário revisar uma decisão, qualquer aprovador pode **reabrir** uma
+  solicitação já aprovada ou rejeitada — ela volta a ficar pendente (o solicitante
+  recebe um e-mail avisando).
+- Quem escreveu uma mensagem no chat de perguntas/respostas pode **editá-la**
+  depois, enquanto a solicitação ainda estiver pendente.
 
 ## 5. Estrutura do projeto
 

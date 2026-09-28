@@ -5,6 +5,7 @@ import {
   emailComentarioSolicitacao,
   emailDecisaoSolicitacao,
   emailNovaSolicitacao,
+  emailSolicitacaoReaberta,
   enviarEmail,
 } from "@/lib/email";
 import { createClient } from "@/lib/supabase/server";
@@ -181,6 +182,91 @@ export async function decidirSolicitacao(
       }),
     );
   }
+}
+
+export async function reabrirSolicitacao(id: string) {
+  const { supabase, user } = await requireUser();
+
+  if (!(await souAprovador(supabase, user.id))) {
+    throw new Error("Somente um aprovador pode reabrir solicitações");
+  }
+
+  const { data: solicitacao, error: fetchError } = await supabase
+    .from("solicitacoes")
+    .select("titulo, numero, solicitante_id, status")
+    .eq("id", id)
+    .single();
+
+  if (fetchError) throw new Error(fetchError.message);
+  if (solicitacao.status === "pendente") {
+    throw new Error("Esta solicitação já está pendente");
+  }
+
+  const { error } = await supabase
+    .from("solicitacoes")
+    .update({
+      status: "pendente",
+      decidido_por: null,
+      comentario_decisao: null,
+      decided_at: null,
+    })
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/solicitacoes");
+
+  const [{ data: reabridor }, { data: solicitante }] = await Promise.all([
+    supabase.from("profiles").select("nome").eq("id", user.id).single(),
+    supabase.from("profiles").select("email").eq("id", solicitacao.solicitante_id).single(),
+  ]);
+
+  if (solicitante?.email) {
+    await enviarEmail(
+      solicitante.email,
+      `Solicitação reaberta: ${solicitacao.titulo}`,
+      emailSolicitacaoReaberta({
+        numero: solicitacao.numero,
+        titulo: solicitacao.titulo,
+        reabridorNome: reabridor?.nome ?? "Alguém",
+      }),
+    );
+  }
+}
+
+export async function editarComentario(comentarioId: string, novaMensagem: string) {
+  const { supabase, user } = await requireUser();
+
+  const texto = novaMensagem.trim();
+  if (!texto) throw new Error("Mensagem vazia");
+
+  const { data: comentario, error: fetchError } = await supabase
+    .from("solicitacao_comentarios")
+    .select("autor_id, solicitacao_id")
+    .eq("id", comentarioId)
+    .single();
+
+  if (fetchError) throw new Error(fetchError.message);
+  if (comentario.autor_id !== user.id) {
+    throw new Error("Só quem escreveu a mensagem pode editá-la");
+  }
+
+  const { data: solicitacao } = await supabase
+    .from("solicitacoes")
+    .select("status")
+    .eq("id", comentario.solicitacao_id)
+    .single();
+
+  if (solicitacao?.status !== "pendente") {
+    throw new Error("Só é possível editar mensagens enquanto a solicitação está pendente");
+  }
+
+  const { error } = await supabase
+    .from("solicitacao_comentarios")
+    .update({ mensagem: texto, editado_em: new Date().toISOString() })
+    .eq("id", comentarioId);
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/solicitacoes");
 }
 
 export async function enviarComentario(solicitacaoId: string, mensagem: string) {

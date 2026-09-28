@@ -4,9 +4,11 @@ import { useRef, useState, useTransition } from "react";
 import {
   anexarArquivos,
   decidirSolicitacao,
+  editarComentario,
   enviarComentario,
   excluirAnexo,
   excluirSolicitacao,
+  reabrirSolicitacao,
 } from "@/app/solicitacoes/actions";
 import {
   formatarDataHora,
@@ -34,14 +36,32 @@ export default function SolicitacaoRow({
   const [decidindo, setDecidindo] = useState<"aprovada" | "rejeitada" | null>(null);
   const [comentario, setComentario] = useState("");
   const [mensagem, setMensagem] = useState("");
+  const [editandoComentarioId, setEditandoComentarioId] = useState<string | null>(null);
+  const [mensagemEditada, setMensagemEditada] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const st = STATUS_SOLICITACAO_STYLE[solicitacao.status];
   const tp = TIPO_SOLICITACAO_STYLE[solicitacao.tipo];
   const podeDecidir = solicitacao.status === "pendente" && souAprovador;
+  const podeReabrir = solicitacao.status !== "pendente" && souAprovador;
   const ehSolicitante = solicitacao.solicitante_id === currentUserId;
   const podeConversar = solicitacao.status === "pendente" && (souAprovador || ehSolicitante);
   const podeAnexar = solicitacao.status === "pendente" && (souAprovador || ehSolicitante);
+
+  function iniciarEdicaoComentario(id: string, mensagemAtual: string) {
+    setEditandoComentarioId(id);
+    setMensagemEditada(mensagemAtual);
+  }
+
+  function salvarComentarioEditado() {
+    const texto = mensagemEditada.trim();
+    if (!texto || !editandoComentarioId) return;
+    startTransition(async () => {
+      await editarComentario(editandoComentarioId, texto);
+      setEditandoComentarioId(null);
+      setMensagemEditada("");
+    });
+  }
 
   function handleArquivosSelecionados(e: React.ChangeEvent<HTMLInputElement>) {
     const arquivos = e.target.files;
@@ -132,25 +152,42 @@ export default function SolicitacaoRow({
           )}
         </div>
 
-        {ehSolicitante && solicitacao.status === "pendente" && (
-          <button
-            onClick={() => {
-              if (confirm("Cancelar esta solicitação?")) {
-                startTransition(async () => {
-                  await excluirSolicitacao(solicitacao.id);
-                });
-              }
-            }}
-            className="cursor-pointer rounded-lg px-3.5 py-2 text-xs font-semibold transition-colors hover:bg-[var(--accent)] hover:text-white"
-            style={{
-              border: "1px solid var(--accent-border)",
-              background: "rgba(217,43,31,.14)",
-              color: "#f2776d",
-            }}
-          >
-            Cancelar
-          </button>
-        )}
+        <div className="flex gap-2">
+          {podeReabrir && (
+            <button
+              onClick={() => {
+                if (confirm("Reabrir esta solicitação? Ela voltará a ficar pendente.")) {
+                  startTransition(async () => {
+                    await reabrirSolicitacao(solicitacao.id);
+                  });
+                }
+              }}
+              className="cursor-pointer rounded-lg px-3.5 py-2 text-xs font-semibold transition-colors hover:bg-white hover:text-black"
+              style={{ border: "1px solid var(--border-medium)", color: "var(--text-secondary)" }}
+            >
+              Reabrir
+            </button>
+          )}
+          {ehSolicitante && solicitacao.status === "pendente" && (
+            <button
+              onClick={() => {
+                if (confirm("Cancelar esta solicitação?")) {
+                  startTransition(async () => {
+                    await excluirSolicitacao(solicitacao.id);
+                  });
+                }
+              }}
+              className="cursor-pointer rounded-lg px-3.5 py-2 text-xs font-semibold transition-colors hover:bg-[var(--accent)] hover:text-white"
+              style={{
+                border: "1px solid var(--accent-border)",
+                background: "rgba(217,43,31,.14)",
+                color: "#f2776d",
+              }}
+            >
+              Cancelar
+            </button>
+          )}
+        </div>
       </div>
 
       {(solicitacao.anexos.length > 0 || podeAnexar) && (
@@ -223,19 +260,61 @@ export default function SolicitacaoRow({
           className="flex flex-col gap-2.5 border-t pt-3"
           style={{ borderColor: "var(--border-subtle)" }}
         >
-          {solicitacao.comentarios.map((c) => (
-            <div key={c.id} className="flex flex-col gap-0.5">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-white">{c.autor?.nome ?? "-"}</span>
-                <span className="font-mono text-[10.5px]" style={{ color: "var(--text-muted)" }}>
-                  {formatarDataHora(c.created_at)}
-                </span>
+          {solicitacao.comentarios.map((c) => {
+            const podeEditar = c.autor_id === currentUserId && solicitacao.status === "pendente";
+            return (
+              <div key={c.id} className="flex flex-col gap-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-white">{c.autor?.nome ?? "-"}</span>
+                  <span className="font-mono text-[10.5px]" style={{ color: "var(--text-muted)" }}>
+                    {formatarDataHora(c.created_at)}
+                    {c.editado_em ? " · editado" : ""}
+                  </span>
+                  {podeEditar && editandoComentarioId !== c.id && (
+                    <button
+                      onClick={() => iniciarEdicaoComentario(c.id, c.mensagem)}
+                      className="cursor-pointer text-[10.5px] font-semibold underline"
+                      style={{ color: "var(--text-tertiary)" }}
+                    >
+                      Editar
+                    </button>
+                  )}
+                </div>
+                {editandoComentarioId === c.id ? (
+                  <div className="flex flex-col gap-1.5">
+                    <textarea
+                      value={mensagemEditada}
+                      onChange={(e) => setMensagemEditada(e.target.value)}
+                      rows={2}
+                      className="resize-y rounded-lg px-3 py-2 text-sm text-white outline-none"
+                      style={{ border: "1px solid var(--border-medium)", background: "rgba(0,0,0,.38)" }}
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={salvarComentarioEditado}
+                        disabled={isPending || !mensagemEditada.trim()}
+                        className="cursor-pointer rounded-lg px-3 py-1.5 text-[11.5px] font-bold text-white disabled:opacity-50"
+                        style={{ border: "1px solid var(--border-medium)" }}
+                      >
+                        Salvar
+                      </button>
+                      <button
+                        onClick={() => setEditandoComentarioId(null)}
+                        className="cursor-pointer rounded-lg px-3 py-1.5 text-[11.5px] font-semibold"
+                        style={{ border: "1px solid var(--border-medium)", color: "var(--text-secondary)" }}
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm whitespace-pre-wrap" style={{ color: "var(--text-secondary)" }}>
+                    {c.mensagem}
+                  </p>
+                )}
               </div>
-              <p className="text-sm whitespace-pre-wrap" style={{ color: "var(--text-secondary)" }}>
-                {c.mensagem}
-              </p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

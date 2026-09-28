@@ -289,6 +289,26 @@ export function emailComentarioSolicitacao({
   );
 }
 
+export function emailSolicitacaoReaberta({
+  numero,
+  titulo,
+  reabridorNome,
+}: {
+  numero: number;
+  titulo: string;
+  reabridorNome: string;
+}) {
+  const body = `
+    <p style="margin:0 0 4px;color:${COR.suave};font-size:11.5px;font-weight:700;">Solicitação nº ${numero}</p>
+    <h1 style="margin:0 0 14px;color:${COR.texto};font-size:19px;font-weight:800;line-height:1.35;">${titulo}</h1>
+    <p style="margin:0 0 18px;color:${COR.texto};font-size:14px;line-height:1.6;">
+      <strong>${reabridorNome}</strong> reabriu esta solicitação, que voltou a ficar ${badge("Pendente", "#ffffff", COR.destaque)}.
+    </p>
+    ${botao(appUrl() + "/solicitacoes", "Abrir OkEI")}
+  `;
+  return emailShell(`Solicitação reaberta: ${titulo}`, "Solicitação reaberta", body);
+}
+
 function formatarData(data: string) {
   const [ano, mes, dia] = data.split("-");
   return `${dia}/${mes}/${ano}`;

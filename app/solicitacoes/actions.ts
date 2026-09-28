@@ -5,6 +5,7 @@ import {
   emailComentarioSolicitacao,
   emailDecisaoSolicitacao,
   emailNovaSolicitacao,
+  emailResponsavelDefinido,
   emailSolicitacaoReaberta,
   enviarEmail,
 } from "@/lib/email";
@@ -91,10 +92,23 @@ export async function criarSolicitacao(formData: FormData) {
   const valorRaw = String(formData.get("valor") || "").trim();
   const valor = tipo === "compra" && valorRaw ? Number(valorRaw.replace(",", ".")) : null;
   const unidadeId = String(formData.get("unidade_id") || "").trim() || null;
+  const responsavelId = String(formData.get("responsavel_id") || "").trim() || null;
+
+  if (responsavelId && !(await souAprovador(supabase, responsavelId))) {
+    throw new Error("O responsável precisa ser um aprovador");
+  }
 
   const { data: solicitacao, error } = await supabase
     .from("solicitacoes")
-    .insert({ titulo, tipo, descricao, valor, unidade_id: unidadeId, solicitante_id: user.id })
+    .insert({
+      titulo,
+      tipo,
+      descricao,
+      valor,
+      unidade_id: unidadeId,
+      responsavel_id: responsavelId,
+      solicitante_id: user.id,
+    })
     .select("id, numero")
     .single();
 
@@ -108,7 +122,13 @@ export async function criarSolicitacao(formData: FormData) {
     getAprovadores(supabase, user.id),
   ]);
 
-  for (const aprovador of aprovadores) {
+  // Se um responsável foi escolhido, só ele é avisado (é quem vai decidir);
+  // caso contrário, todos os aprovadores recebem o aviso.
+  const destinatarios = responsavelId
+    ? aprovadores.filter((a) => a.id === responsavelId)
+    : aprovadores;
+
+  for (const aprovador of destinatarios) {
     if (!aprovador.email) continue;
     await enviarEmail(
       aprovador.email,
@@ -125,6 +145,56 @@ export async function criarSolicitacao(formData: FormData) {
   }
 }
 
+export async function definirResponsavel(id: string, responsavelId: string | null) {
+  const { supabase, user } = await requireUser();
+
+  if (!(await souAprovador(supabase, user.id))) {
+    throw new Error("Somente um aprovador pode definir o responsável");
+  }
+
+  if (responsavelId && !(await souAprovador(supabase, responsavelId))) {
+    throw new Error("O responsável precisa ser um aprovador");
+  }
+
+  const { data: solicitacao, error: fetchError } = await supabase
+    .from("solicitacoes")
+    .select("titulo, numero, status")
+    .eq("id", id)
+    .single();
+
+  if (fetchError) throw new Error(fetchError.message);
+  if (solicitacao.status !== "pendente") {
+    throw new Error("Só é possível alterar o responsável enquanto a solicitação está pendente");
+  }
+
+  const { error } = await supabase
+    .from("solicitacoes")
+    .update({ responsavel_id: responsavelId })
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/solicitacoes");
+
+  if (responsavelId && responsavelId !== user.id) {
+    const [{ data: atribuidor }, { data: responsavel }] = await Promise.all([
+      supabase.from("profiles").select("nome").eq("id", user.id).single(),
+      supabase.from("profiles").select("email").eq("id", responsavelId).single(),
+    ]);
+
+    if (responsavel?.email) {
+      await enviarEmail(
+        responsavel.email,
+        `Você foi definido como responsável: ${solicitacao.titulo}`,
+        emailResponsavelDefinido({
+          numero: solicitacao.numero,
+          titulo: solicitacao.titulo,
+          atribuidorNome: atribuidor?.nome ?? "Alguém",
+        }),
+      );
+    }
+  }
+}
+
 export async function decidirSolicitacao(
   id: string,
   status: "aprovada" | "rejeitada",
@@ -138,13 +208,16 @@ export async function decidirSolicitacao(
 
   const { data: solicitacao, error: fetchError } = await supabase
     .from("solicitacoes")
-    .select("titulo, numero, solicitante_id, status")
+    .select("titulo, numero, solicitante_id, status, responsavel_id")
     .eq("id", id)
     .single();
 
   if (fetchError) throw new Error(fetchError.message);
   if (solicitacao.status !== "pendente") {
     throw new Error("Esta solicitação já foi decidida");
+  }
+  if (solicitacao.responsavel_id && solicitacao.responsavel_id !== user.id) {
+    throw new Error("Só o responsável designado pode decidir esta solicitação");
   }
 
   const comentarioFinal = comentario.trim() || null;

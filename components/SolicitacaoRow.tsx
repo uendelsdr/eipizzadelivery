@@ -4,6 +4,7 @@ import { useRef, useState, useTransition } from "react";
 import {
   anexarArquivos,
   decidirSolicitacao,
+  definirResponsavel,
   editarComentario,
   enviarComentario,
   excluirAnexo,
@@ -20,6 +21,7 @@ import {
 import {
   STATUS_SOLICITACAO_LABEL,
   TIPO_SOLICITACAO_LABEL,
+  type Profile,
   type SolicitacaoComPerfis,
 } from "@/lib/types";
 
@@ -27,10 +29,12 @@ export default function SolicitacaoRow({
   solicitacao,
   currentUserId,
   souAprovador,
+  aprovadores,
 }: {
   solicitacao: SolicitacaoComPerfis;
   currentUserId: string;
   souAprovador: boolean;
+  aprovadores: Profile[];
 }) {
   const [isPending, startTransition] = useTransition();
   const [decidindo, setDecidindo] = useState<"aprovada" | "rejeitada" | null>(null);
@@ -42,11 +46,22 @@ export default function SolicitacaoRow({
 
   const st = STATUS_SOLICITACAO_STYLE[solicitacao.status];
   const tp = TIPO_SOLICITACAO_STYLE[solicitacao.tipo];
-  const podeDecidir = solicitacao.status === "pendente" && souAprovador;
+  const souResponsavel = !solicitacao.responsavel_id || solicitacao.responsavel_id === currentUserId;
+  const podeDecidir = solicitacao.status === "pendente" && souAprovador && souResponsavel;
+  const aguardandoOutroResponsavel =
+    solicitacao.status === "pendente" && souAprovador && !souResponsavel;
   const podeReabrir = solicitacao.status !== "pendente" && souAprovador;
   const ehSolicitante = solicitacao.solicitante_id === currentUserId;
   const podeConversar = solicitacao.status === "pendente" && (souAprovador || ehSolicitante);
   const podeAnexar = solicitacao.status === "pendente" && (souAprovador || ehSolicitante);
+  const podeReatribuir = solicitacao.status === "pendente" && souAprovador;
+
+  function handleResponsavelChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const responsavelId = e.target.value || null;
+    startTransition(async () => {
+      await definirResponsavel(solicitacao.id, responsavelId);
+    });
+  }
 
   function iniciarEdicaoComentario(id: string, mensagemAtual: string) {
     setEditandoComentarioId(id);
@@ -142,6 +157,32 @@ export default function SolicitacaoRow({
             <span>solicitado por {solicitacao.solicitante?.nome ?? "-"}</span>
             <span>{formatarDataHora(solicitacao.created_at)}</span>
           </div>
+
+          {podeReatribuir ? (
+            <div className="flex items-center gap-2 text-[11.5px]" style={{ color: "var(--text-tertiary)" }}>
+              <span>Responsável:</span>
+              <select
+                value={solicitacao.responsavel_id ?? ""}
+                onChange={handleResponsavelChange}
+                disabled={isPending}
+                className="cursor-pointer rounded-md px-2 py-1 text-[11.5px] font-semibold text-white outline-none"
+                style={{ border: "1px solid var(--border-medium)", background: "rgba(0,0,0,.38)" }}
+              >
+                <option value="" style={{ background: "#1a1817" }}>Qualquer aprovador decide</option>
+                {aprovadores.map((a) => (
+                  <option key={a.id} value={a.id} style={{ background: "#1a1817" }}>
+                    {a.nome}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            solicitacao.responsavel && (
+              <div className="font-mono text-[11.5px]" style={{ color: "var(--text-tertiary)" }}>
+                Responsável: <strong style={{ color: "var(--text-secondary)" }}>{solicitacao.responsavel.nome}</strong>
+              </div>
+            )
+          )}
 
           {solicitacao.status !== "pendente" && (
             <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>
@@ -347,6 +388,16 @@ export default function SolicitacaoRow({
             Enviar
           </button>
         </div>
+      )}
+
+      {aguardandoOutroResponsavel && (
+        <p
+          className="border-t pt-3 text-xs"
+          style={{ borderColor: "var(--border-subtle)", color: "var(--text-tertiary)" }}
+        >
+          Aguardando decisão de{" "}
+          <strong style={{ color: "var(--text-secondary)" }}>{solicitacao.responsavel?.nome ?? "-"}</strong>
+        </p>
       )}
 
       {podeDecidir && (

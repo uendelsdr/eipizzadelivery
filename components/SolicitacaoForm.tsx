@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { criarSolicitacao } from "@/app/solicitacoes/actions";
 import { TIPO_SOLICITACAO_STYLE } from "@/lib/solicitacaoDisplay";
-import { TIPO_SOLICITACAO_LABEL, type TipoSolicitacao, type Unidade } from "@/lib/types";
+import { TIPO_SOLICITACAO_LABEL, type Profile, type TipoSolicitacao, type Unidade } from "@/lib/types";
 
 const inputStyle = {
   border: "1px solid var(--border-medium)",
@@ -15,9 +15,11 @@ const labelClass = "flex flex-col gap-1.5 text-[11px] font-bold tracking-wide up
 
 export default function SolicitacaoForm({
   unidades,
+  aprovadores,
   onClose,
 }: {
   unidades: Unidade[];
+  aprovadores: Profile[];
   onClose: () => void;
 }) {
   const [isPending, startTransition] = useTransition();
@@ -112,6 +114,27 @@ export default function SolicitacaoForm({
                 {unidades.map((u) => (
                   <option key={u.id} value={u.id} style={{ background: "#1a1817" }}>
                     {u.nome}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+
+          {aprovadores.length > 0 && (
+            <label className={labelClass} style={{ color: "var(--text-tertiary)" }}>
+              Responsável pela decisão
+              <select
+                name="responsavel_id"
+                defaultValue=""
+                className="cursor-pointer rounded-lg px-3.5 py-3 text-sm font-normal text-white normal-case outline-none"
+                style={inputStyle}
+              >
+                <option value="" style={{ background: "#1a1817" }}>
+                  Qualquer aprovador decide
+                </option>
+                {aprovadores.map((a) => (
+                  <option key={a.id} value={a.id} style={{ background: "#1a1817" }}>
+                    {a.nome}
                   </option>
                 ))}
               </select>

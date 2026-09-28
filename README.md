@@ -27,8 +27,9 @@ Delivery.
    solicitações, rode também, nessa ordem: [`migration_002`](./supabase/migration_002_numero_descricao_solicitacoes.sql),
    [`migration_003`](./supabase/migration_003_comentarios_solicitacao.sql),
    [`migration_004`](./supabase/migration_004_anexos_solicitacao.sql),
-   [`migration_005`](./supabase/migration_005_aprovadores_e_unidades.sql) e
-   [`migration_006`](./supabase/migration_006_reabrir_e_editar_comentario.sql).)
+   [`migration_005`](./supabase/migration_005_aprovadores_e_unidades.sql),
+   [`migration_006`](./supabase/migration_006_reabrir_e_editar_comentario.sql) e
+   [`migration_007`](./supabase/migration_007_responsavel_solicitacao.sql).)
 
 ### 1.3. Criar os 2 usuários (você e o diretor operacional)
 
@@ -150,6 +151,12 @@ mudança ou outro tipo que precisam de aprovação:
   recebe um e-mail avisando).
 - Quem escreveu uma mensagem no chat de perguntas/respostas pode **editá-la**
   depois, enquanto a solicitação ainda estiver pendente.
+- Como você e o Kauã podem usar o sistema ao mesmo tempo, dá pra escolher um
+  **responsável** (entre os dois) por decidir cada solicitação — na criação ou
+  depois, enquanto estiver pendente. Quando há um responsável definido, só ele
+  pode aprovar/rejeitar aquela solicitação (o outro aprovador continua vendo,
+  comentando e recebe um e-mail quando é definido como responsável). Sem
+  responsável escolhido, funciona como antes: qualquer aprovador decide.
 
 ## 5. Estrutura do projeto
 

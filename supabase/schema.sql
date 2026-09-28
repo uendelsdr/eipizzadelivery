@@ -136,6 +136,7 @@ create table if not exists public.solicitacoes (
   valor numeric(10,2),
   unidade_id uuid references public.unidades (id),
   solicitante_id uuid not null references public.profiles (id),
+  responsavel_id uuid references public.profiles (id),
   status text not null default 'pendente' check (status in ('pendente', 'aprovada', 'rejeitada')),
   decidido_por uuid references public.profiles (id),
   comentario_decisao text,
@@ -177,6 +178,7 @@ create policy "Excluir proprias solicitacoes ou como aprovador"
   );
 
 create index if not exists solicitacoes_status_idx on public.solicitacoes (status);
+create index if not exists solicitacoes_responsavel_idx on public.solicitacoes (responsavel_id);
 
 -- 5. Comentarios (perguntas/respostas) nas solicitacoes, antes da decisao
 create table if not exists public.solicitacao_comentarios (

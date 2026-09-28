@@ -45,6 +45,7 @@ export type Solicitacao = {
   valor: number | null;
   unidade_id: string | null;
   solicitante_id: string;
+  responsavel_id: string | null;
   status: StatusSolicitacao;
   decidido_por: string | null;
   comentario_decisao: string | null;
@@ -81,6 +82,7 @@ export type AnexoComUrl = SolicitacaoAnexo & { url: string | null };
 export type SolicitacaoComPerfis = Solicitacao & {
   solicitante: Profile | null;
   decisor: Profile | null;
+  responsavel: Profile | null;
   unidade: Unidade | null;
   comentarios: ComentarioComAutor[];
   anexos: AnexoComUrl[];

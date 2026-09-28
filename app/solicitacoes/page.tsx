@@ -21,7 +21,7 @@ export default async function SolicitacoesPage() {
     supabase
       .from("solicitacoes")
       .select(
-        "*, solicitante:profiles!solicitacoes_solicitante_id_fkey(*), decisor:profiles!solicitacoes_decidido_por_fkey(*), unidade:unidades(*), comentarios:solicitacao_comentarios(*, autor:profiles(nome)), anexos:solicitacao_anexos(*)",
+        "*, solicitante:profiles!solicitacoes_solicitante_id_fkey(*), decisor:profiles!solicitacoes_decidido_por_fkey(*), responsavel:profiles!solicitacoes_responsavel_id_fkey(*), unidade:unidades(*), comentarios:solicitacao_comentarios(*, autor:profiles(nome)), anexos:solicitacao_anexos(*)",
       )
       .order("created_at", { ascending: false })
       .order("created_at", { referencedTable: "solicitacao_comentarios", ascending: true })

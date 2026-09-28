@@ -31,8 +31,13 @@ export default function SolicitacoesApp({
   const [filtroStatus, setFiltroStatus] = useState<FiltroStatus>("todas");
   const [filtroUnidade, setFiltroUnidade] = useState("todas");
 
+  const aprovadores = useMemo(() => profiles.filter((p) => p.eh_aprovador), [profiles]);
+
   const pendentesParaMim = souAprovador
-    ? initialSolicitacoes.filter((s) => s.status === "pendente").length
+    ? initialSolicitacoes.filter(
+        (s) =>
+          s.status === "pendente" && (!s.responsavel_id || s.responsavel_id === currentUserId),
+      ).length
     : 0;
 
   const solicitacoes = useMemo(() => {
@@ -119,13 +124,20 @@ export default function SolicitacoesApp({
                 solicitacao={s}
                 currentUserId={currentUserId}
                 souAprovador={souAprovador}
+                aprovadores={aprovadores}
               />
             ))}
           </div>
         )}
       </main>
 
-      {showForm && <SolicitacaoForm unidades={unidades} onClose={() => setShowForm(false)} />}
+      {showForm && (
+        <SolicitacaoForm
+          unidades={unidades}
+          aprovadores={aprovadores}
+          onClose={() => setShowForm(false)}
+        />
+      )}
     </div>
   );
 }

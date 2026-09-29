@@ -31,19 +31,21 @@ export default function AppHeader({
       style={{ background: "rgba(12,11,11,.84)", borderBottom: "1px solid var(--border-subtle)" }}
     >
       <div className="mx-auto flex max-w-[1220px] flex-wrap items-center gap-4.5 px-5 py-3.5 sm:px-7">
-        <OkeiIcon size={32} />
+        <Link href="/" className="flex items-center gap-4.5">
+          <OkeiIcon size={32} />
+          <div className="flex flex-col gap-0.5">
+            <span
+              className="text-lg leading-none font-black text-white"
+              style={{ fontFamily: "var(--font-brand)", letterSpacing: "-0.05em" }}
+            >
+              OkEI
+            </span>
+            <span className="text-[11.5px]" style={{ color: "var(--text-tertiary)" }}>
+              Gestão de Demandas · Ei Pizza Delivery
+            </span>
+          </div>
+        </Link>
         <div className="h-6.5 w-px" style={{ background: "var(--border-medium)" }} />
-        <div className="flex flex-col gap-0.5">
-          <span
-            className="text-lg leading-none font-black text-white"
-            style={{ fontFamily: "var(--font-brand)", letterSpacing: "-0.05em" }}
-          >
-            OkEI
-          </span>
-          <span className="text-[11.5px]" style={{ color: "var(--text-tertiary)" }}>
-            Gestão de Demandas · Ei Pizza Delivery
-          </span>
-        </div>
 
         <nav className="ml-2 flex gap-1">
           {abas.map((aba) => {

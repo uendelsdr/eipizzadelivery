@@ -52,7 +52,7 @@ export default function TaskApp({
     });
   }, [initialTasks, busca, filtroStatus, filtroResponsavel, somenteAtrasadas, hoje]);
 
-  const abertas = initialTasks.filter((t) => t.status !== "concluida").length;
+  const abertas = initialTasks.filter((t) => t.status === "pendente").length;
   const andamento = initialTasks.filter((t) => t.status === "em_andamento").length;
   const atrasadas = initialTasks.filter((t) => ehAtrasada(t.prazo, t.status, hoje)).length;
   const concluidas = initialTasks.filter((t) => t.status === "concluida").length;

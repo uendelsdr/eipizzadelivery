@@ -117,6 +117,15 @@ O agendamento do job diário já está configurado em [`vercel.json`](./vercel.j
 (roda 12:00 UTC = 09:00 no horário de Brasília). Enquanto `RESEND_API_KEY` não estiver
 configurada, os envios são simplesmente ignorados — nada quebra.
 
+## 3.4. Recuperar senha
+
+A tela de login tem o link **Esqueci minha senha** (`/esqueci-senha`): a pessoa informa o
+e-mail e recebe um link que abre `/redefinir-senha` para criar uma nova senha. Para os
+links dos e-mails funcionarem, no Supabase (**Authentication > URL Configuration**) a
+**Site URL** deve ser o endereço do app (`https://demandas.eipizzadelivery.com.br`) e esse
+mesmo endereço precisa estar em **Redirect URLs** (`.../**`). O e-mail "Send password
+recovery" enviado pelo painel do Supabase também cai nessa mesma tela.
+
 ## 4. Solicitações de aprovação
 
 Além das demandas, existe uma segunda aba (**Solicitações**) para pedidos de compra,

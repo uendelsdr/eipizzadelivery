@@ -1,3 +1,4 @@
+import Link from "next/link";
 import ConfigMissing from "@/components/ConfigMissing";
 import OkeiLogo from "@/components/OkeiMark";
 import { hasSupabaseConfig } from "@/lib/supabase/config";
@@ -87,6 +88,14 @@ export default async function LoginPage({
             Entrar
           </button>
         </form>
+
+        <Link
+          href="/esqueci-senha"
+          className="mt-5 block text-center text-xs font-semibold"
+          style={{ color: "var(--text-tertiary)" }}
+        >
+          Esqueci minha senha
+        </Link>
       </div>
     </div>
   );
